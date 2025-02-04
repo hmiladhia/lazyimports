@@ -1,10 +1,10 @@
 # Lazyimports
 
-![logo](docs/linelogo.png)
+[![logo](https://raw.githubusercontent.com/hmiladhia/lazyimports/refs/heads/main/docs/linelogo.png)](https://pypi.org/project/auto-lazy-imports/)
 
-[![PyPI](https://img.shields.io/pypi/v/lazyimports)](https://pypi.org/project/lazyimports/)
-[![PyPI - License](https://img.shields.io/pypi/l/lazyimports)](https://pypi.org/project/lazyimports/)
-[![PyPI - Wheel](https://img.shields.io/pypi/wheel/lazyimports)](https://pypi.org/project/lazyimports/)
+[![PyPI](https://img.shields.io/pypi/v/auto-lazy-imports)](https://pypi.org/project/auto-lazy-imports/)
+[![PyPI - License](https://img.shields.io/pypi/l/auto-lazy-imports)](https://pypi.org/project/auto-lazy-imports/)
+[![PyPI - Wheel](https://img.shields.io/pypi/wheel/auto-lazy-imports)](https://pypi.org/project/auto-lazy-imports/)
 ![Tests](https://github.com/hmiladhia/lazyimports/actions/workflows/quality.yaml/badge.svg)
 [![Copier](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/copier-org/copier/master/img/badge/badge-grayscale-inverted-border-orange.json)](https://github.com/copier-org/copier)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -15,10 +15,10 @@
 
 ## Installation 🔨
 
-Install Lazyimports via pip:
+Install `lazyimports` via pip:
 
 ```sh
-pip install lazyimports
+pip install auto-lazy-imports
 ```
 
 ## Usage 👍
