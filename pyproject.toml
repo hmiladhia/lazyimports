@@ -1,23 +1,23 @@
 [project]
 name = "auto-lazy-imports"
 authors = [
-  {name = "Dhia Hmila"},
+    { name = "Dhia Hmila" },
 ]
 description = "A module to enable lazy imports using native python syntax"
-license = {text = "MIT License"}
+license = { text = "MIT License" }
 requires-python = ">=3.9"
 keywords = []
 readme = "README.md"
 dynamic = ['version']
 classifiers = [
-  "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 [project.urls]
@@ -29,19 +29,19 @@ target-version = "py39"
 
 [tool.ruff.lint]
 select = [
-  "A", # flake8-builtins
-  "B", # flake8-bugbear
-  "E", # pycodestyle - Error
-  "W", # pycodestyle - Warning
-  "F", # Pyflakes
-  "N", # pep8-naming
-  "S", # flake8-bandit
-  "RUF", # Ruff-specific rules
-  "PLC", # Pylint Convention
-  "PLE", # Pylint Error
-  "PLW", # Pylint Warning
-  "PLR", # Pylint Refactor
-  "Q", # flake8-quotes
+    "A", # flake8-builtins
+    "B", # flake8-bugbear
+    "E", # pycodestyle - Error
+    "W", # pycodestyle - Warning
+    "F", # Pyflakes
+    "N", # pep8-naming
+    "S", # flake8-bandit
+    "RUF", # Ruff-specific rules
+    "PLC", # Pylint Convention
+    "PLE", # Pylint Error
+    "PLW", # Pylint Warning
+    "PLR", # Pylint Refactor
+    "Q", # flake8-quotes
 ]
 extend-select = [
     "ARG", # flake8-unused-arguments
@@ -79,12 +79,12 @@ extend-select = [
     "PT" # flake8-pytest-style ( Only use in tests )
 ]
 extend-ignore = [
-  "ANN101", # flake8-annotations - missing-type-self
-  "D1", # pydocstyle - missing-docstring
-  "D203", # pydocstyle - one-blank-line-before-class
-  "D212", # multi-line-summary-first-line
-  "ISC001", # flake8-implicit-str-concat - single-line-implicit-string-concatenation
-  "TD002", # flake8-todos - missing-todo-author
+    "ANN101", # flake8-annotations - missing-type-self
+    "D1", # pydocstyle - missing-docstring
+    "D203", # pydocstyle - one-blank-line-before-class
+    "D212", # multi-line-summary-first-line
+    "ISC001", # flake8-implicit-str-concat - single-line-implicit-string-concatenation
+    "TD002", # flake8-todos - missing-todo-author
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -109,11 +109,12 @@ code = "__import__('lazyimports').install()"
 
 
 [dependency-groups]
-dev = [{include-group = "tests"}]
+dev = [{ include-group = "tests" }]
 tests = [
     "pytest>=8.3.4",
     "pytest-sugar"
 ]
+linting = ["ruff==0.7.3", "mypy"]
 
 [tool.hatch.version]
 path = "src/lazyimports.py"
@@ -134,7 +135,7 @@ disallow_untyped_decorators = false
 [tool.tox]
 min_version = "4"
 requires = ["tox>=4.19", "tox-uv>=1"]
-env_list = ["format", "lint", "type", "3.13", "3.12", "3.11", "3.10", "3.9"]
+env_list = ["format", "lint", "type", "3.13", "3.12", "3.11", "3.10", "3.9", "ipython"]
 
 # This is a workaround
 # See Issue: https://github.com/ymyzk/tox-gh-actions/issues/198
@@ -145,29 +146,27 @@ python = """
 	3.11: py311
 	3.12: py312
 	3.13: py313
+	ipython: py311
 	"""
 
 [tool.tox.env_run_base]
 description = "run unit tests"
-deps = [
-    "pytest>=8",
-    "pytest-sugar"
-]
+dependency_groups = ["tests"]
 commands = [["pytest", { replace = "posargs", default = ["tests"], extend = true }]]
+
+[tool.tox.env.ipython]
+description = "run unit tests in ipython"
+deps = ["ipython"]
+commands = [["ipython", "-m", "pytest", { replace = "posargs", default = ["tests"], extend = true }]]
 
 [tool.tox.env.format]
 description = "run formatter"
 skip_install = true
-deps = ["ruff"]
-commands = [["ruff", "format", { replace = "posargs", default = ["."], extend = true} ]]
+dependency_groups = ["linting"]
+commands = [["ruff", "format", { replace = "posargs", default = ["."], extend = true }]]
 
 [tool.tox.env.lint]
 description = "run linters"
 skip_install = true
-deps = ["ruff"]
-commands = [["ruff", "check", { replace = "posargs", default = ["."], extend = true} ]]
-
-[tool.tox.env.type]
-description = "run type checks"
-deps = ["mypy"]
-commands = [["mypy", { replace = "posargs", default = ["src", "tests"], extend = true} ]]
+dependency_groups = ["linting"]
+commands = [["ruff", "check", { replace = "posargs", default = ["."], extend = true }]]
