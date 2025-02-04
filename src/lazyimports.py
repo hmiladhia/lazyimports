@@ -16,6 +16,7 @@ __version__ = "0.0.1"
 
 lazy_modules: list[str] = []
 
+_LAZY_SUBMODULES = "++lazy-submodules++"
 
 def _load_parent_module(fullname: str) -> None:
     if not (parent := ".".join(fullname.split(".")[:-1])):
@@ -44,6 +45,13 @@ def _load_module(module: ModuleType) -> None:
 
 
 class LazyModule(ModuleType):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+
+        prefix = name + "."
+        lazy_submodules = {mod[len(prefix):] for mod in lazy_modules if mod.startswith(prefix)}
+        setattr(self, _LAZY_SUBMODULES, lazy_submodules)
+
     def __getattribute__(self, item: str) -> Any:  # noqa ANN401
         if item in ("__doc__",):
             raise AttributeError(item)  # trigger loading
@@ -52,6 +60,9 @@ class LazyModule(ModuleType):
 
     def __getattr__(self, item: str) -> Any:  # noqa ANN401
         if item in ("__path__", "__file__", "__cached__"):
+            raise AttributeError(item)
+
+        if item in getattr(self, _LAZY_SUBMODULES):
             raise AttributeError(item)
 
         _load_module(self)
@@ -71,6 +82,7 @@ class LazyModule(ModuleType):
             "__package__",
             "__spec__",
             "__class__",
+            _LAZY_SUBMODULES,
         ):
             return super().__setattr__(attr, value)
 
@@ -103,6 +115,8 @@ class LazyLoaderWrapper(Loader):
     def _cleanup(self, module: ModuleType) -> None:
         if module.__spec__ is not None:
             module.__spec__.loader = self.loader
+        if _LAZY_SUBMODULES in module.__dict__:
+            delattr(module, _LAZY_SUBMODULES)
         module.__class__ = ModuleType
 
 

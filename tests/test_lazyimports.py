@@ -113,3 +113,31 @@ def test_lazy_module_set_value(
     submodule.hello()
     captured = capsys.readouterr()
     assert captured.out == "Hello\n"
+
+
+def test_from_import_module(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
+        from fake_package import submodule
+
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    submodule.hello()
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.submodule\nHello\n"
+
+
+def test_from_import_func(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
+        from fake_package import hello
+
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\n"
+    hello()
+    captured = capsys.readouterr()
+    assert captured.out == "Hello\n"
