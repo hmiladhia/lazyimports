@@ -160,6 +160,3 @@ def lazy_imports(*modules: str) -> Generator[None, None, None]:
 
 def install() -> None:
     sys.meta_path.insert(0, LazyPathFinder(lazy_modules))
-
-
-install()
