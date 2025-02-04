@@ -1,5 +1,5 @@
 [project]
-name = "lazyimports"
+name = "auto-lazy-imports"
 authors = [
   {name = "Dhia Hmila"},
 ]

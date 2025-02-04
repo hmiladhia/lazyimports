@@ -2,7 +2,7 @@
 _commit: v0.2
 _src_path: https://github.com/hmiladhia/package-template
 author: Dhia Hmila
-distribution_name: lazyimports
+distribution_name: auto-lazy-imports
 linting_level: 2
 organisation: hmiladhia
 package_name: lazyimports
