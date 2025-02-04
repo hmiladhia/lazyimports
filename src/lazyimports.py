@@ -12,12 +12,12 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence, Generator
 
 __author__ = "Dhia Hmila"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 lazy_modules: list[str] = []
 
 _INSTALLED = False
-_LAZY_SUBMODULES = "++lazy-submodules++"
+_LAZY_SUBMODULES = "lazy+submodules"
 
 
 def _load_parent_module(fullname: str) -> None:
@@ -178,9 +178,14 @@ def install() -> None:
     lazy_modules.extend(
         module.strip() for module in env_modules.split(",") if module.strip()
     )
+    if sys.version_info >= (3, 10):
+        eps = entry_points(group="lazyimports")
+    else:
+        eps = entry_points().get("lazyimports", [])
+
     lazy_modules.extend(
         module.strip()
-        for entry in entry_points(group="lazyimports")
+        for entry in eps
         for module in entry.value.split(",")
         if module.strip()
     )
