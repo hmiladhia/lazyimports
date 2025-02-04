@@ -21,8 +21,8 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/hmiladhia/emojdule"
-Issues = "https://github.com/hmiladhia/emojdule/issues"
+Repository = "https://github.com/hmiladhia/lazyimports"
+Issues = "https://github.com/hmiladhia/lazyimports/issues"
 
 [tool.ruff]
 target-version = "py39"
@@ -116,10 +116,10 @@ tests = [
 ]
 
 [tool.hatch.version]
-path = "src/emojdule/__init__.py"
+path = "src/lazyimports.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/emojdule"]
+packages = ["src/lazyimports.py"]
 sources = ["src"]
 
 
