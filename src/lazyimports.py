@@ -16,7 +16,9 @@ __version__ = "0.0.1"
 
 lazy_modules: list[str] = []
 
+_INSTALLED = False
 _LAZY_SUBMODULES = "++lazy-submodules++"
+
 
 def _load_parent_module(fullname: str) -> None:
     if not (parent := ".".join(fullname.split(".")[:-1])):
@@ -49,7 +51,9 @@ class LazyModule(ModuleType):
         super().__init__(name)
 
         prefix = name + "."
-        lazy_submodules = {mod[len(prefix):] for mod in lazy_modules if mod.startswith(prefix)}
+        lazy_submodules = {
+            mod[len(prefix) :] for mod in lazy_modules if mod.startswith(prefix)
+        }
         setattr(self, _LAZY_SUBMODULES, lazy_submodules)
 
     def __getattribute__(self, item: str) -> Any:  # noqa ANN401
@@ -85,7 +89,6 @@ class LazyModule(ModuleType):
             _LAZY_SUBMODULES,
         ):
             return super().__setattr__(attr, value)
-
 
         if isinstance(value, ModuleType):
             return super().__setattr__(attr, value)
@@ -148,15 +151,39 @@ class LazyPathFinder(MetaPathFinder):
 
 
 @contextlib.contextmanager
-def lazy_imports(*modules: str) -> Generator[None, None, None]:
+def lazy_imports(*modules: str, extend: bool = False) -> Generator[None, None, None]:
     original_value = lazy_modules[:]
 
     try:
-        lazy_modules.extend(modules)
+        if extend:
+            lazy_modules.extend(modules)
+        else:
+            lazy_modules[:] = modules
+
         yield
     finally:
         lazy_modules[:] = original_value
 
 
 def install() -> None:
+    global _INSTALLED  # noqa: PLW0603
+
+    if _INSTALLED:
+        return
+
+    import os
+    from importlib.metadata import entry_points
+
+    env_modules = os.environ.get("PYTHON_LAZY_IMPORTS", "")
+    lazy_modules.extend(
+        module.strip() for module in env_modules.split(",") if module.strip()
+    )
+    lazy_modules.extend(
+        module.strip()
+        for entry in entry_points(group="lazyimports")
+        for module in entry.value.split(",")
+        if module.strip()
+    )
+
+    _INSTALLED = True
     sys.meta_path.insert(0, LazyPathFinder(lazy_modules))

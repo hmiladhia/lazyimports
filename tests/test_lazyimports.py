@@ -92,23 +92,18 @@ def test_eager_module_eager_siblings_lazy_parent(
     assert captured.out == "Hello\n"
 
 
-
 def test_lazy_module_set_value(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
-        import fake_package.submodule as submodule
-
+        import fake_package.submodule as submodule  # noqa: PLR0402
 
     captured = capsys.readouterr()
     assert captured.out == ""
 
     submodule.world = "world"
     captured = capsys.readouterr()
-    assert (
-        captured.out
-        == "fake_package\nfake_package.submodule\n"
-    )
+    assert captured.out == "fake_package\nfake_package.submodule\n"
 
     submodule.hello()
     captured = capsys.readouterr()
@@ -120,7 +115,6 @@ def test_from_import_module(
 ) -> None:
     with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
         from fake_package import submodule
-
 
     captured = capsys.readouterr()
     assert captured.out == ""
@@ -134,7 +128,6 @@ def test_from_import_func(
 ) -> None:
     with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
         from fake_package import hello
-
 
     captured = capsys.readouterr()
     assert captured.out == "fake_package\n"
