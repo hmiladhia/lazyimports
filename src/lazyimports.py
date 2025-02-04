@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 __author__ = "Dhia Hmila"
 __version__ = "0.1.0"
 
-lazy_modules: list[str] = []
+lazy_modules: set[str] = set()
 
 _INSTALLED = False
 _LAZY_SUBMODULES = "lazy+submodules"
@@ -101,15 +101,15 @@ class LazyModule(ModuleType):
 class LazyLoaderWrapper(Loader):
     def __init__(self, loader: Loader) -> None:
         self.loader = loader
-        self.please_load = False
+        self.to_be_loaded = True
 
     def create_module(self, spec: ModuleSpec) -> ModuleType:
         # mod = self.loader.create_module(spec)
         return LazyModule(spec.name)
 
     def exec_module(self, module: ModuleType) -> None:
-        if not self.please_load:
-            self.please_load = True
+        if self.to_be_loaded:
+            self.to_be_loaded = False
             return None
 
         self._cleanup(module)
@@ -124,7 +124,7 @@ class LazyLoaderWrapper(Loader):
 
 
 class LazyPathFinder(MetaPathFinder):
-    def __init__(self, module_names: list[str]) -> None:
+    def __init__(self, module_names: set[str]) -> None:
         self.lazy_modules = module_names
         self.finder = PathFinder()
 
@@ -152,17 +152,17 @@ class LazyPathFinder(MetaPathFinder):
 
 @contextlib.contextmanager
 def lazy_imports(*modules: str, extend: bool = False) -> Generator[None, None, None]:
-    original_value = lazy_modules[:]
+    original_value = {*lazy_modules}
 
     try:
-        if extend:
-            lazy_modules.extend(modules)
-        else:
-            lazy_modules[:] = modules
+        if not extend:
+            lazy_modules.clear()
 
+        lazy_modules.update(modules)
         yield
     finally:
-        lazy_modules[:] = original_value
+        lazy_modules.clear()
+        lazy_modules.update(original_value)
 
 
 def install() -> None:
@@ -175,7 +175,7 @@ def install() -> None:
     from importlib.metadata import entry_points
 
     env_modules = os.environ.get("PYTHON_LAZY_IMPORTS", "")
-    lazy_modules.extend(
+    lazy_modules.update(
         module.strip() for module in env_modules.split(",") if module.strip()
     )
     if sys.version_info >= (3, 10):
@@ -183,7 +183,7 @@ def install() -> None:
     else:
         eps = entry_points().get("lazyimports", [])
 
-    lazy_modules.extend(
+    lazy_modules.update(
         module.strip()
         for entry in eps
         for module in entry.value.split(",")
