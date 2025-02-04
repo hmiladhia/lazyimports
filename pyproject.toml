@@ -1,0 +1,167 @@
+[project]
+name = "lazyimports"
+authors = [
+  {name = "Dhia Hmila"},
+]
+description = "A module to enable lazy imports using native python syntax"
+license = {text = "MIT License"}
+requires-python = ">=3.9"
+keywords = []
+readme = "README.md"
+dynamic = ['version']
+classifiers = [
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Repository = "https://github.com/hmiladhia/emojdule"
+Issues = "https://github.com/hmiladhia/emojdule/issues"
+
+[tool.ruff]
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+  "A", # flake8-builtins
+  "B", # flake8-bugbear
+  "E", # pycodestyle - Error
+  "W", # pycodestyle - Warning
+  "F", # Pyflakes
+  "N", # pep8-naming
+  "S", # flake8-bandit
+  "RUF", # Ruff-specific rules
+  "PLC", # Pylint Convention
+  "PLE", # Pylint Error
+  "PLW", # Pylint Warning
+  "PLR", # Pylint Refactor
+  "Q", # flake8-quotes
+]
+extend-select = [
+    "ARG", # flake8-unused-arguments
+    "ASYNC", # flake8-async
+    "BLE", # flake8-blind-except
+    "C4", # flake8-comprehensions
+    "C90", # mccabe (complexity)
+    "FA", # flake8-future-annotations
+    "ISC", # flake8-implicit-str-concat
+    "PIE", # flake8-pie ( misc lints )
+    "PERF", # Perflint
+    "PTH", # flake8-use-pathlib
+    "SIM", # flake8-simplify
+    "SLOT", # flake8-slots
+    "TD", # flake8-todos (EXCLUDE TD002)
+    "TID", # flake8-tidy-imports
+    "UP", # pyupgrade
+    "RET", # flake8-return
+    "RSE", # flake8-raise (RSE)
+
+    # Typing
+    "ANN", # flake8-annotations
+    "PYI", # flake8-pyi
+    "TCH", # flake8-type-checking
+
+    # Documentation
+    "D", # pydocstyle
+    # "DOC", # pydoclint # Preview
+
+    # Tool Specific
+    # "FAST", # FastAPI  # Preview
+    "NPY", # NumPy-specific rules
+    "PD", # pandas-vet
+    "ICN", # flake8-import-conventions
+    "PT" # flake8-pytest-style ( Only use in tests )
+]
+extend-ignore = [
+  "ANN101", # flake8-annotations - missing-type-self
+  "D1", # pydocstyle - missing-docstring
+  "D203", # pydocstyle - one-blank-line-before-class
+  "D212", # multi-line-summary-first-line
+  "ISC001", # flake8-implicit-str-concat - single-line-implicit-string-concatenation
+  "TD002", # flake8-todos - missing-todo-author
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**.py" = ["S101", "ANN201"]
+"!tests/**.py" = ["PT"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 100
+ignore-overlong-task-comments = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 6
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [{include-group = "tests"}]
+tests = [
+    "pytest>=8.3.4",
+    "pytest-sugar"
+]
+
+[tool.hatch.version]
+path = "src/emojdule/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/emojdule"]
+sources = ["src"]
+
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+strict = true
+ignore_missing_imports = true
+disallow_untyped_decorators = false
+
+[tool.tox]
+min_version = "4"
+requires = ["tox>=4.19", "tox-uv>=1"]
+env_list = ["format", "lint", "type", "3.13", "3.12", "3.11", "3.10", "3.9"]
+
+# This is a workaround
+# See Issue: https://github.com/ymyzk/tox-gh-actions/issues/198
+[tool.tox.gh-actions]
+python = """
+	3.9: py39
+	3.10: py310
+	3.11: py311
+	3.12: py312
+	3.13: py313
+	"""
+
+[tool.tox.env_run_base]
+description = "run unit tests"
+deps = [
+    "pytest>=8",
+    "pytest-sugar"
+]
+commands = [["pytest", { replace = "posargs", default = ["tests"], extend = true }]]
+
+[tool.tox.env.format]
+description = "run formatter"
+skip_install = true
+deps = ["ruff"]
+commands = [["ruff", "format", { replace = "posargs", default = ["."], extend = true} ]]
+
+[tool.tox.env.lint]
+description = "run linters"
+skip_install = true
+deps = ["ruff"]
+commands = [["ruff", "check", { replace = "posargs", default = ["."], extend = true} ]]
+
+[tool.tox.env.type]
+description = "run type checks"
+deps = ["mypy"]
+commands = [["mypy", { replace = "posargs", default = ["src", "tests"], extend = true} ]]

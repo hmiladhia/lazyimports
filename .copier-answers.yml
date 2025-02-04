@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.2
+_src_path: https://github.com/hmiladhia/package-template
+author: Dhia Hmila
+distribution_name: lazyimports
+linting_level: 2
+organisation: hmiladhia
+package_name: lazyimports
+project_description: A module to enable lazy imports using native python syntax
+project_name: lazyimports
+project_version: 0.1.0
+use_mypy: false
+use_precommit: true
+use_tox: true
+use_uv: true
