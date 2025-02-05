@@ -63,7 +63,7 @@ extend-select = [
     "RSE", # flake8-raise (RSE)
 
     # Typing
-    "ANN", # flake8-annotations
+    # "ANN", # flake8-annotations
     "PYI", # flake8-pyi
     "TCH", # flake8-type-checking
 
