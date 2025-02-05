@@ -9,15 +9,57 @@ from importlib.machinery import PathFinder, ModuleSpec
 
 if TYPE_CHECKING:
     from typing import Any
-    from collections.abc import Iterable, Sequence, Generator
+    from collections.abc import Iterable, Sequence, Generator, Iterator
 
 __author__ = "Dhia Hmila"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
-lazy_modules: set[str] = set()
+
+class _LazyImports:
+    def __init__(self) -> None:
+        self._modules: set[str] = set()
+        self._objects: dict[str, set[str]] = {}
+
+    def __contains__(self, x: str) -> bool:
+        return x in self._modules
+
+    def __getitem__(self, item: str) -> set[str]:
+        return self._objects.get(item, set())
+
+    def __iter__(self) -> Iterator[str]:
+        yield from self._modules
+        yield from (
+            f"{mod}:{obj}" for mod, objs in self._objects.items() for obj in objs
+        )
+
+    def submodule(self, name: str) -> set[str]:
+        prefix = name + "."
+        return {mod[len(prefix) :] for mod in self._modules if mod.startswith(prefix)}
+
+    def clear(self) -> None:
+        self._modules.clear()
+        self._objects.clear()
+
+    def add(self, value: str) -> None:
+        obj = None
+        if ":" in value:
+            value, obj = value.split(":", 1)
+
+        self._modules.add(value)
+        if obj:
+            self._objects.setdefault(value, set()).add(obj)
+
+    def update(self, value: Iterable[str]) -> None:
+        for v in value:
+            self.add(v)
+
+
+lazy_modules: _LazyImports = _LazyImports()
 
 _INSTALLED = False
+Undefined = object()
 _LAZY_SUBMODULES = "lazy+submodules"
+_LAZY_CALLABLES = "lazy+callables"
 
 
 def _load_parent_module(fullname: str) -> None:
@@ -32,6 +74,9 @@ def _load_parent_module(fullname: str) -> None:
 
 
 def _load_module(module: ModuleType) -> None:
+    if not isinstance(module, LazyModule):
+        return
+
     _load_parent_module(module.__name__)
 
     if (spec := module.__spec__) is None:
@@ -49,12 +94,8 @@ def _load_module(module: ModuleType) -> None:
 class LazyModule(ModuleType):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-
-        prefix = name + "."
-        lazy_submodules = {
-            mod[len(prefix) :] for mod in lazy_modules if mod.startswith(prefix)
-        }
-        setattr(self, _LAZY_SUBMODULES, lazy_submodules)
+        setattr(self, _LAZY_SUBMODULES, lazy_modules.submodule(name))
+        setattr(self, _LAZY_CALLABLES, lazy_modules[name])
 
     def __getattribute__(self, item: str) -> Any:  # noqa ANN401
         if item in ("__doc__",):
@@ -68,6 +109,9 @@ class LazyModule(ModuleType):
 
         if item in getattr(self, _LAZY_SUBMODULES):
             raise AttributeError(item)
+
+        if item in getattr(self, _LAZY_CALLABLES):
+            return LazyObjectProxy(self, item)
 
         _load_module(self)
 
@@ -87,6 +131,7 @@ class LazyModule(ModuleType):
             "__spec__",
             "__class__",
             _LAZY_SUBMODULES,
+            _LAZY_CALLABLES,
         ):
             return super().__setattr__(attr, value)
 
@@ -104,7 +149,6 @@ class LazyLoaderWrapper(Loader):
         self.to_be_loaded = True
 
     def create_module(self, spec: ModuleSpec) -> ModuleType:
-        # mod = self.loader.create_module(spec)
         return LazyModule(spec.name)
 
     def exec_module(self, module: ModuleType) -> None:
@@ -124,7 +168,7 @@ class LazyLoaderWrapper(Loader):
 
 
 class LazyPathFinder(MetaPathFinder):
-    def __init__(self, module_names: set[str]) -> None:
+    def __init__(self, module_names: _LazyImports) -> None:
         self.lazy_modules = module_names
         self.finder = PathFinder()
 
@@ -148,6 +192,92 @@ class LazyPathFinder(MetaPathFinder):
 
         spec.loader = LazyLoaderWrapper(spec.loader)
         return spec
+
+
+class LazyObjectProxy:
+    __slots__ = ("__module", "__name", "__lobj")
+
+    def __init__(self, module: LazyModule, name: str) -> None:
+        super().__setattr__("_LazyObjectProxy__module", module)
+        super().__setattr__("_LazyObjectProxy__name", name)
+        super().__setattr__("_LazyObjectProxy__lobj", Undefined)
+
+    def __getattr__(self, name: str) -> Any:  # noqa ANN401
+        return getattr(self.__obj, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:  # noqa ANN401
+        setattr(self.__obj, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        delattr(self.__obj, name)
+
+    def __instancecheck__(self, cls: type) -> bool:
+        return isinstance(self.__obj, cls)
+
+    def __subclasscheck__(self, cls: type) -> bool:
+        return issubclass(type(self.__obj), cls)
+
+    @property
+    def __class__(self) -> type:
+        return self.__obj.__class__
+
+    @property
+    def __dict__(self) -> dict[str, Any]:
+        return self.__obj.__dict__
+
+    def __dir__(self) -> list[str]:
+        return dir(self.__obj)
+
+    def __repr__(self) -> str:
+        return repr(self.__obj)
+
+    def __str__(self) -> str:
+        return str(self.__obj)
+
+    def __bool__(self) -> bool:
+        return bool(self.__obj)
+
+    def __eq__(self, other: Any) -> bool:  # noqa ANN401
+        return self.__obj == other
+
+    def __hash__(self) -> int:
+        return hash(self.__obj)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa ANN401
+        return self.__obj(*args, **kwargs)
+
+    def __getattribute__(self, name: str) -> Any:  # noqa ANN401
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            return getattr(self.__obj, name)
+
+    def __getitem__(self, key: str) -> Any:  # noqa ANN401
+        return self.__obj[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:  # noqa ANN401
+        self.__obj[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self.__obj[key]
+
+    def __len__(self) -> int:
+        return len(self.__obj)
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self.__obj)
+
+    def __contains__(self, item: str) -> bool:
+        return item in self.__obj
+
+    @property
+    def __obj(self) -> Any:  # noqa ANN401
+        if self.__lobj is Undefined:
+            _load_module(self.__module)
+            super().__setattr__(
+                "_LazyObjectProxy__lobj", getattr(self.__module, self.__name)
+            )
+        return self.__lobj
 
 
 @contextlib.contextmanager
