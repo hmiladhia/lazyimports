@@ -30,7 +30,7 @@ Wrap imports in a `with` statement to enable lazy loading:
 ```python
 import lazyimports
 
-with lazyimports.lazy_modules("package", "package.submodule"):
+with lazyimports.lazy_imports("package", "package.submodule"):
     from package import submodule
 
 submodule.hello()
@@ -38,27 +38,48 @@ submodule.hello()
 
 ### 2. Configuring via `pyproject.toml`
 
-For package-based usage, define lazy-loaded modules in `pyproject.toml`:
+Define lazy-loaded modules and objects in pyproject.toml for package-based usage.
 
 #### Standard configuration:
 
 ```toml
 [project.entry-points.lazyimports]
-"my_package" = "package,package.submodule"
+"lazy_modules" = "package,package.submodule"
+"lazy_functions" = "package:hello"
+"lazy_objects" = "package:array,package:integer"
 ```
 
 #### Poetry-based configuration:
 
 ```toml
 [tool.poetry.plugins.lazyimports]
-"my_package" = "package,package.submodule"
+"lazy_modules" = "package,package.submodule"
+"lazy_functions" = "package:hello"
+"lazy_objects" = "package:array,package:integer"
+```
+
+💡 The keys (lazy_modules, lazy_functions, etc.) can be listed in any order, using comma-separated values.
+
+The previous example is also equivalent to:
+
+```toml
+[project.entry-points.lazyimports]
+"custom_key" = "package,package.submodule,package:hello,package:array,package:integer"
+```
+
+
+After defining the configuration, import modules as usual—no code modifications needed:
+
+```python
+from package import submodule
+from package import hello
 ```
 
 ### 3. Using an Environment Variable (for Development)
 
-Set an environment variable to enable lazy loading dynamically:
+Dynamically enable lazy imports by setting an environment variable:
 
 ```sh
-export PYTHON_LAZY_IMPORTS="package,package.submodule"
+export PYTHON_LAZY_IMPORTS="package,package.submodule,package:array,package:integer,package:hello"
 python script.py
 ```
