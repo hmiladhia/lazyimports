@@ -18,18 +18,18 @@ __version__ = "0.2.0"
 class _LazyImports:
     def __init__(self) -> None:
         self._modules: set[str] = set()
-        self._objects: dict[str, set[str]] = {}
+        self.__objects: dict[str, set[str]] = {}
 
     def __contains__(self, x: str) -> bool:
         return x in self._modules
 
     def __getitem__(self, item: str) -> set[str]:
-        return self._objects.get(item, set())
+        return self.__objects.get(item, set())
 
     def __iter__(self) -> Iterator[str]:
         yield from self._modules
         yield from (
-            f"{mod}:{obj}" for mod, objs in self._objects.items() for obj in objs
+            f"{mod}:{obj}" for mod, objs in self.__objects.items() for obj in objs
         )
 
     def submodule(self, name: str) -> set[str]:
@@ -38,7 +38,7 @@ class _LazyImports:
 
     def clear(self) -> None:
         self._modules.clear()
-        self._objects.clear()
+        self.__objects.clear()
 
     def add(self, value: str) -> None:
         obj = None
@@ -47,7 +47,7 @@ class _LazyImports:
 
         self._modules.add(value)
         if obj:
-            self._objects.setdefault(value, set()).add(obj)
+            self.__objects.setdefault(value, set()).add(obj)
 
     def update(self, value: Iterable[str]) -> None:
         for v in value:
@@ -97,13 +97,13 @@ class LazyModule(ModuleType):
         setattr(self, _LAZY_SUBMODULES, lazy_modules.submodule(name))
         setattr(self, _LAZY_CALLABLES, lazy_modules[name])
 
-    def __getattribute__(self, item: str) -> Any:  # noqa ANN401
+    def __getattribute__(self, item: str) -> Any:
         if item in ("__doc__",):
             raise AttributeError(item)  # trigger loading
 
         return super().__getattribute__(item)
 
-    def __getattr__(self, item: str) -> Any:  # noqa ANN401
+    def __getattr__(self, item: str) -> Any:
         if item in ("__path__", "__file__", "__cached__"):
             raise AttributeError(item)
 
@@ -121,7 +121,7 @@ class LazyModule(ModuleType):
         _load_module(self)
         return dir(self)
 
-    def __setattr__(self, attr: str, value: Any) -> None:  # noqa ANN401
+    def __setattr__(self, attr: str, value: Any) -> None:
         if attr in (
             "__path__",
             "__file__",
@@ -202,15 +202,23 @@ class LazyObjectProxy:
         super().__setattr__("_LazyObjectProxy__name", name)
         super().__setattr__("_LazyObjectProxy__lobj", Undefined)
 
-    def __getattr__(self, name: str) -> Any:  # noqa ANN401
+    # -- Attributes --
+    def __getattribute__(self, name: str) -> Any:
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            return getattr(self.__obj, name)
+
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.__obj, name)
 
-    def __setattr__(self, name: str, value: Any) -> None:  # noqa ANN401
+    def __setattr__(self, name: str, value: Any) -> None:
         setattr(self.__obj, name, value)
 
     def __delattr__(self, name: str) -> None:
         delattr(self.__obj, name)
 
+    # -- Type --
     def __instancecheck__(self, cls: type) -> bool:
         return isinstance(self.__obj, cls)
 
@@ -228,34 +236,111 @@ class LazyObjectProxy:
     def __dir__(self) -> list[str]:
         return dir(self.__obj)
 
+    # -- Repr --
     def __repr__(self) -> str:
         return repr(self.__obj)
 
     def __str__(self) -> str:
         return str(self.__obj)
 
-    def __bool__(self) -> bool:
-        return bool(self.__obj)
-
-    def __eq__(self, other: Any) -> bool:  # noqa ANN401
-        return self.__obj == other
-
     def __hash__(self) -> int:
         return hash(self.__obj)
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa ANN401
-        return self.__obj(*args, **kwargs)
+    # -- Comparisons --
+    def __bool__(self) -> bool:
+        return bool(self.__obj)
 
-    def __getattribute__(self, name: str) -> Any:  # noqa ANN401
-        try:
-            return super().__getattribute__(name)
-        except AttributeError:
-            return getattr(self.__obj, name)
+    def __eq__(self, other):
+        return self.__obj == other
 
-    def __getitem__(self, key: str) -> Any:  # noqa ANN401
+    def __ne__(self, other):
+        return self.__obj != other
+
+    def __lt__(self, other):
+        return self.__obj < other
+
+    def __le__(self, other):
+        return self.__obj <= other
+
+    def __gt__(self, other):
+        return self.__obj > other
+
+    def __ge__(self, other):
+        return self.__obj >= other
+
+    # -- Binary --
+    def __add__(self, other):
+        return self.__obj + other
+
+    def __sub__(self, other):
+        return self.__obj - other
+
+    def __mul__(self, other):
+        return self.__obj * other
+
+    def __truediv__(self, other):
+        return self.__obj / other
+
+    def __floordiv__(self, other):
+        return self.__obj // other
+
+    def __mod__(self, other):
+        return self.__obj % other
+
+    def __pow__(self, other):
+        return self.__obj**other
+
+    def __rshift__(self, other):
+        return self >> other
+
+    def __lshift__(self, other):
+        return self << other
+
+    def __and__(self, other):
+        return self & other
+
+    def __or__(self, other):
+        return self | other
+
+    def __xor__(self, other):
+        return self ^ other
+
+    # -- Unary --
+    def __neg__(self):
+        return -self.__obj
+
+    def __pos__(self):
+        return +self.__obj
+
+    def __abs__(self):
+        return abs(self.__obj)
+
+    def __invert__(self):
+        return ~self.__obj
+
+    def __round__(self, n=None):
+        return round(self.__obj, n)
+
+    def __floor__(self):
+        import math
+
+        return math.floor(self.__obj)
+
+    def __ceil__(self):
+        import math
+
+        return math.ceil(self.__obj)
+
+    def __trunc__(self):
+        import math
+
+        return math.trunc(self.__obj)
+
+    # -- Indexing --
+    def __getitem__(self, key: str) -> Any:
         return self.__obj[key]
 
-    def __setitem__(self, key: str, value: Any) -> None:  # noqa ANN401
+    def __setitem__(self, key: str, value: Any) -> None:
         self.__obj[key] = value
 
     def __delitem__(self, key: str) -> None:
@@ -270,8 +355,42 @@ class LazyObjectProxy:
     def __contains__(self, item: str) -> bool:
         return item in self.__obj
 
+    # -- Callable --
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__obj(*args, **kwargs)
+
+    # -- Context Manager --
+    def __enter__(self):
+        return self.__obj.__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return self.__obj.__exit__(exc_type, exc_value, traceback)
+
+    # -- Copy --
+    def __copy__(self):
+        import copy
+
+        return copy.copy(self.__obj)
+
+    def __deepcopy__(self, memo):
+        import copy
+
+        return copy.deepcopy(self.__obj, memo)
+
+    # -- Pickle --
+    def __getstate__(self):
+        import pickle
+
+        return pickle.dumps(self.__obj)
+
+    # -- Weak Reference --
+    def __weakref__(self):
+        import weakref
+
+        return weakref.ref(self.__obj)
+
     @property
-    def __obj(self) -> Any:  # noqa ANN401
+    def __obj(self) -> Any:
         if self.__lobj is Undefined:
             _load_module(self.__module)
             super().__setattr__(

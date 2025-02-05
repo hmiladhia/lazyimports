@@ -160,3 +160,49 @@ def test_lazy_object(
     hello()
     captured = capsys.readouterr()
     assert captured.out == "fake_package\nHello\n"
+
+
+def test_lazy_object_array(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports("fake_package.submodule:array"):
+        from fake_package.submodule import array
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\n"
+    array.append("value")
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package.submodule\n"
+
+
+def test_lazy_object_integer(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports("fake_package", "fake_package.submodule:integer"):
+        from fake_package.submodule import integer
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    print(integer)
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.submodule\n1\n"
+
+    assert integer == 1
+    assert integer is not 1  # noqa: F632
+
+    from fake_package.submodule import integer
+
+    assert integer is 1  # noqa: F632
+
+
+def test_lazy_object_ge(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports("fake_package", "fake_package.submodule:integer"):
+        from fake_package.submodule import integer
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert integer >= 0
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.submodule\n"
