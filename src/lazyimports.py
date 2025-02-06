@@ -12,16 +12,20 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence, Generator, Iterator
 
 __author__ = "Dhia Hmila"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 class _LazyImports:
     def __init__(self) -> None:
         self._modules: set[str] = set()
         self.__objects: dict[str, set[str]] = {}
+        self._catchall = False
+
+    def set_catchall(self, value):
+        self._catchall = value
 
     def __contains__(self, x: str) -> bool:
-        return x in self._modules
+        return self._catchall or x in self._modules
 
     def __getitem__(self, item: str) -> set[str]:
         return self.__objects.get(item, set())
@@ -400,10 +404,13 @@ class LazyObjectProxy:
 
 
 @contextlib.contextmanager
-def lazy_imports(*modules: str, extend: bool = False) -> Generator[None, None, None]:
+def lazy_imports(
+    *modules: str, extend: bool = False, catchall=None
+) -> Generator[None, None, None]:
     original_value = {*lazy_modules}
-
+    catchall = not modules if catchall is None else catchall
     try:
+        lazy_modules.set_catchall(catchall)
         if not extend:
             lazy_modules.clear()
 
@@ -411,6 +418,7 @@ def lazy_imports(*modules: str, extend: bool = False) -> Generator[None, None, N
         yield
     finally:
         lazy_modules.clear()
+        lazy_modules.set_catchall(False)
         lazy_modules.update(original_value)
 
 

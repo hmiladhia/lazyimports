@@ -206,3 +206,17 @@ def test_lazy_object_ge(
     assert integer >= 0
     captured = capsys.readouterr()
     assert captured.out == "fake_package\nfake_package.submodule\n"
+
+
+def test_catchall(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports():
+        import json
+        import fake_package
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    print(json.dumps(fake_package.array))
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\n[]\n"
