@@ -30,10 +30,24 @@ Wrap imports in a `with` statement to enable lazy loading:
 ```python
 import lazyimports
 
-with lazyimports.lazy_imports("package", "package.submodule"):
+with lazyimports.lazy_imports():
     from package import submodule
 
 submodule.hello()
+```
+
+Note: By default, all modules under the with statement will be lazily loaded. However, you can also explicitly specify which packages to load lazily by providing them as arguments.
+This is especially useful, if you want to use lazy objects
+
+```python
+import lazyimports
+
+with lazyimports.lazy_imports("package:function", "package.subpackage"):
+    import package.subpackage
+    from package import function
+
+package.subpackage.hello()
+function()
 ```
 
 ### 2. Configuring via `pyproject.toml`
