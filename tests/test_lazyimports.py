@@ -225,13 +225,13 @@ def test_catchall(
 def test_counted_proxy_objects_1(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package:World#1"):
+    with lazyimports.lazy_imports("fake_package:World#2"):
         from fake_package import World
 
     captured = capsys.readouterr()
     assert captured.out == ""
 
-    with lazyimports.lazy_imports("fake_package:World#1"):
+    with lazyimports.lazy_imports("fake_package:World#27"):
         from fake_package import World
 
     captured = capsys.readouterr()
@@ -243,9 +243,30 @@ def test_counted_proxy_objects_1(
 def test_counted_proxy_objects_2(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package:World#2"):
+    with lazyimports.lazy_imports("fake_package:World#4"):
         from fake_package import World
         from fake_package import World  # noqa: F811
+
+        captured = capsys.readouterr()
+        assert captured.out == ""
+
+        from fake_package import World  # noqa: F811
+
+        captured = capsys.readouterr()
+        assert captured.out == "fake_package\n"
+
+        World()
+
+
+def test_counted_proxy_objects_3(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports("fake_package:World#4"):
+        import fake_package
+        from fake_package import World
+
+        _ = fake_package.World
+        _ = fake_package.World
 
         captured = capsys.readouterr()
         assert captured.out == ""
