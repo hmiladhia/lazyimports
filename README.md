@@ -30,13 +30,13 @@ Wrap imports in a `with` statement to enable lazy loading:
 ```python
 import lazyimports
 
-with lazyimports.lazy_imports():
+with lazyimports.lazy_imports(catchall=True):
     from package import submodule
 
 submodule.hello()
 ```
 
-Note: By default, all modules under the with statement will be lazily loaded. However, you can also explicitly specify which packages to load lazily by providing them as arguments.
+Note: With catchall enabled, all modules under the with statement will be lazily loaded. However, you can also explicitly specify which packages to load lazily by providing them as arguments.
 This is especially useful, if you want to use lazy objects
 
 ```python
@@ -96,4 +96,63 @@ Dynamically enable lazy imports by setting an environment variable:
 ```sh
 export PYTHON_LAZY_IMPORTS="package,package.submodule,package:array,package:integer,package:hello"
 python script.py
+```
+
+## Advanced Usage 🧑‍🏫
+
+### 1. Counted Lazy objects
+
+Sometimes you want to use have limit the lazy imports of a certain object to your package. In that cas, you can use counted Lazy objects, which will only lazy import an object a limited number of times.
+
+```python
+import lazyimports
+
+with lazyimports.lazy_imports("package:function#3"):
+    import package
+    from package import function # Lazily Imported: Counter decremented by 2 ( from ... import syntax)
+
+    package.function # Lazily Imported: Counter decremented by 1 (attribute access syntax)
+
+    from package import function # Eagerly Imported: Counter reached 0
+
+function()
+```
+
+### 2. Shortcut Collection Module
+
+Shortcut collection modules are a special kind of modules, that will import lazy objects from other modules to provide an import shortcut.
+
+If you import a lazy object from a shortcut collection, it will trigger an automatic import.
+
+Here is a common pattern using counted lazy objects and shortcut collection modules:
+
+```bash
+├───my_package
+│   ├───submodule1.py
+│   ├───submodule2.py
+│   └───__init__.py
+└───main.py
+```
+
+```python
+# my_package/__init__.py
+
+from lazyimports import lazy_imports, lazy_modules
+
+lazy_modules.add("~my_package") # could also be defined in pyproject.toml
+
+with lazy_imports("my_package.submodule1:MyClass1#2", "my_package.submodule2:MyClass2#2"):
+    from .submodule1 import MyClass1
+    from .submodule2 import MyClass2
+
+__all__ = ["MyClass1", "MyClass2"]
+```
+
+```python
+# main.py
+
+from my_package import MyClass2
+
+# MyClass2 is eagerly loaded ( you do not get a proxy but the real class ),
+# but MyClass1 won't be loaded until it is also imported
 ```
