@@ -12,13 +12,13 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence, Generator, Iterator
 
 __author__ = "Dhia Hmila"
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 class _LazyImports:
     def __init__(self) -> None:
         self._modules: set[str] = set()
-        self.__objects: dict[str, set[str]] = {}
+        self.__objects: dict[str, dict[str, int]] = {}
         self._catchall = False
 
     def set_catchall(self, value):
@@ -27,13 +27,15 @@ class _LazyImports:
     def __contains__(self, x: str) -> bool:
         return self._catchall or x in self._modules
 
-    def __getitem__(self, item: str) -> set[str]:
-        return self.__objects.get(item, set())
+    def __getitem__(self, item: str) -> dict[str, int]:
+        return self.__objects.get(item, {})
 
     def __iter__(self) -> Iterator[str]:
         yield from self._modules
         yield from (
-            f"{mod}:{obj}" for mod, objs in self.__objects.items() for obj in objs
+            f"{mod}:{obj}#{count}" if count >= 0 else f"{mod}:{obj}"
+            for mod, objs in self.__objects.items()
+            for obj, count in objs.items()
         )
 
     def submodule(self, name: str) -> set[str]:
@@ -51,7 +53,10 @@ class _LazyImports:
 
         self._modules.add(value)
         if obj:
-            self.__objects.setdefault(value, set()).add(obj)
+            obj, count = obj.split("#", 1) if "#" in obj else (obj, -1)
+
+            mod_objects = self.__objects.setdefault(value, {})
+            mod_objects[obj] = int(count) * 2
 
     def update(self, value: Iterable[str]) -> None:
         for v in value:
@@ -63,7 +68,7 @@ lazy_modules: _LazyImports = _LazyImports()
 _INSTALLED = False
 Undefined = object()
 _LAZY_SUBMODULES = "lazy+submodules"
-_LAZY_CALLABLES = "lazy+callables"
+_LAZY_OBJECTS = "lazy+objects"
 
 
 def _load_parent_module(fullname: str) -> None:
@@ -99,7 +104,7 @@ class LazyModule(ModuleType):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         setattr(self, _LAZY_SUBMODULES, lazy_modules.submodule(name))
-        setattr(self, _LAZY_CALLABLES, lazy_modules[name])
+        setattr(self, _LAZY_OBJECTS, lazy_modules[name])
 
     def __getattribute__(self, item: str) -> Any:
         if item in ("__doc__",):
@@ -114,7 +119,8 @@ class LazyModule(ModuleType):
         if item in getattr(self, _LAZY_SUBMODULES):
             raise AttributeError(item)
 
-        if item in getattr(self, _LAZY_CALLABLES):
+        if count := getattr(self, _LAZY_OBJECTS).get(item):
+            getattr(self, _LAZY_OBJECTS)[item] = count - 1
             return LazyObjectProxy(self, item)
 
         _load_module(self)
@@ -135,7 +141,7 @@ class LazyModule(ModuleType):
             "__spec__",
             "__class__",
             _LAZY_SUBMODULES,
-            _LAZY_CALLABLES,
+            _LAZY_OBJECTS,
         ):
             return super().__setattr__(attr, value)
 
@@ -150,14 +156,14 @@ class LazyModule(ModuleType):
 class LazyLoaderWrapper(Loader):
     def __init__(self, loader: Loader) -> None:
         self.loader = loader
-        self.to_be_loaded = True
+        self.is_lazy = True
 
     def create_module(self, spec: ModuleSpec) -> ModuleType:
         return LazyModule(spec.name)
 
     def exec_module(self, module: ModuleType) -> None:
-        if self.to_be_loaded:
-            self.to_be_loaded = False
+        if self.is_lazy:
+            self.is_lazy = False
             return None
 
         self._cleanup(module)
@@ -199,7 +205,7 @@ class LazyPathFinder(MetaPathFinder):
 
 
 class LazyObjectProxy:
-    __slots__ = ("__module", "__name", "__lobj")
+    __slots__ = ("__lobj", "__module", "__name")
 
     def __init__(self, module: LazyModule, name: str) -> None:
         super().__setattr__("_LazyObjectProxy__module", module)
