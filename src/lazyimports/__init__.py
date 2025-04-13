@@ -174,16 +174,21 @@ class LazyLoaderWrapper(Loader):
             self.is_lazy = False
             return None
 
-        if isinstance(module, LazyModule):
-            self._cleanup(module)
-
+        self._cleanup(module)
         return self.loader.exec_module(module)
 
     def _cleanup(self, module: ModuleType) -> None:
         if module.__spec__ is not None:
             module.__spec__.loader = self.loader
+
+        if not isinstance(module, LazyModule):
+            return
+
         if _LAZY_SUBMODULES in module.__dict__:
             delattr(module, _LAZY_SUBMODULES)
+
+        if _LAZY_OBJECTS in module.__dict__:
+            delattr(module, _LAZY_OBJECTS)
 
         module.__class__ = SCModule if self.is_sc else ModuleType
 

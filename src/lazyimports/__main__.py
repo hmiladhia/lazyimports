@@ -3,7 +3,9 @@ from pathlib import Path
 
 
 def auto_detect(path: Path):
-    for module_path in path.glob("**/*.py"):
+    module_paths = (path,) if path.is_file() else path.glob("**/*.py")
+
+    for module_path in module_paths:
         content = module_path.read_text(encoding="utf-8")
         name = (
             module_path.with_suffix("")
@@ -36,7 +38,7 @@ def is_lazy_import(node: ast.AST):
     if not isinstance(node, ast.Call):
         return False
 
-    if node.args or node.keywords:
+    if node.keywords:
         return False
 
     func = node.func
