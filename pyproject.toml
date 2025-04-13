@@ -24,6 +24,31 @@ classifiers = [
 Repository = "https://github.com/hmiladhia/lazyimports"
 Issues = "https://github.com/hmiladhia/lazyimports/issues"
 
+[dependency-groups]
+dev = [{ include-group = "tests" }]
+tests = [
+    "pytest>=8.3.4",
+    "pytest-sugar"
+]
+linting = ["ruff==0.7.3", "mypy"]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel.hooks.autorun]
+dependencies = ["hatch-autorun"]
+code = "__import__('lazyimports').install()"
+
+[tool.hatch.version]
+path = "src/lazyimports.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lazyimports.py"]
+sources = ["src"]
+
+
 [tool.ruff]
 target-version = "py39"
 
@@ -79,7 +104,6 @@ extend-select = [
     "PT" # flake8-pytest-style ( Only use in tests )
 ]
 extend-ignore = [
-    "ANN101", # flake8-annotations - missing-type-self
     "D1", # pydocstyle - missing-docstring
     "D203", # pydocstyle - one-blank-line-before-class
     "D212", # multi-line-summary-first-line
@@ -97,32 +121,6 @@ ignore-overlong-task-comments = true
 
 [tool.ruff.lint.mccabe]
 max-complexity = 6
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-
-[tool.hatch.build.targets.wheel.hooks.autorun]
-dependencies = ["hatch-autorun"]
-code = "__import__('lazyimports').install()"
-
-
-[dependency-groups]
-dev = [{ include-group = "tests" }]
-tests = [
-    "pytest>=8.3.4",
-    "pytest-sugar"
-]
-linting = ["ruff==0.7.3", "mypy"]
-
-[tool.hatch.version]
-path = "src/lazyimports.py"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/lazyimports.py"]
-sources = ["src"]
-
 
 [tool.mypy]
 python_version = "3.9"
