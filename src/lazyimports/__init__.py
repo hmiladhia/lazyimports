@@ -28,7 +28,7 @@ class MType(Flag):
     ShortcutCollection = auto()
 
 
-class _LazyImports:
+class LazyModules:
     def __init__(self) -> None:
         self._modules: dict[str, MType] = {}
         self.__objects: dict[str, dict[str, int]] = {}
@@ -189,7 +189,7 @@ class LazyLoaderWrapper(Loader):
 
 
 class LazyPathFinder(MetaPathFinder):
-    def __init__(self, module_names: _LazyImports) -> None:
+    def __init__(self, module_names: LazyModules) -> None:
         self.lazy_modules = module_names
         self.finder = PathFinder()
 
@@ -498,4 +498,4 @@ def install() -> None:
     sys.meta_path.insert(0, LazyPathFinder(lazy_modules))
 
 
-lazy_modules: _LazyImports = _LazyImports()
+lazy_modules: LazyModules = LazyModules()

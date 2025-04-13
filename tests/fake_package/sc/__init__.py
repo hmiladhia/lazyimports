@@ -1,6 +1,9 @@
 """DocStrings."""
 
-from .submodule import World
+from lazyimports import lazy_imports
+
+with lazy_imports():
+    from .submodule import World
 
 print(__name__)
 

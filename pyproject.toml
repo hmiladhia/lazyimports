@@ -42,10 +42,10 @@ dependencies = ["hatch-autorun"]
 code = "__import__('lazyimports').install()"
 
 [tool.hatch.version]
-path = "src/lazyimports.py"
+path = "src/lazyimports/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lazyimports.py"]
+packages = ["src/lazyimports"]
 sources = ["src"]
 
 
