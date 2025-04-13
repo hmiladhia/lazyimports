@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import contextlib
+from enum import Flag, auto
 from types import ModuleType
 from typing import TYPE_CHECKING
 from importlib.abc import Loader, MetaPathFinder
@@ -12,61 +13,11 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence, Generator, Iterator
 
 __author__ = "Dhia Hmila"
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 
-
-class _LazyImports:
-    def __init__(self) -> None:
-        self._modules: set[str] = set()
-        self.__objects: dict[str, dict[str, int]] = {}
-        self._catchall = False
-
-    def set_catchall(self, value):
-        self._catchall = value
-
-    def __contains__(self, x: str) -> bool:
-        return self._catchall or x in self._modules
-
-    def __getitem__(self, item: str) -> dict[str, int]:
-        return self.__objects.get(item, {})
-
-    def __iter__(self) -> Iterator[str]:
-        yield from self._modules
-        yield from (
-            f"{mod}:{obj}#{count}" if count >= 0 else f"{mod}:{obj}"
-            for mod, objs in self.__objects.items()
-            for obj, count in objs.items()
-        )
-
-    def submodule(self, name: str) -> set[str]:
-        prefix = name + "."
-        return {mod[len(prefix) :] for mod in self._modules if mod.startswith(prefix)}
-
-    def clear(self) -> None:
-        self._modules.clear()
-        self.__objects.clear()
-
-    def add(self, value: str) -> None:
-        obj = None
-        if ":" in value:
-            value, obj = value.split(":", 1)
-
-        self._modules.add(value)
-        if obj:
-            obj, count = obj.split("#", 1) if "#" in obj else (obj, -1)
-
-            mod_objects = self.__objects.setdefault(value, {})
-            mod_objects[obj] = int(count) * 2
-
-    def update(self, value: Iterable[str]) -> None:
-        for v in value:
-            self.add(v)
-
-
-lazy_modules: _LazyImports = _LazyImports()
+Undefined = object()
 
 _INSTALLED = False
-Undefined = object()
 _LAZY_SUBMODULES = "lazy+submodules"
 _LAZY_OBJECTS = "lazy+objects"
 
@@ -98,6 +49,83 @@ def _load_module(module: ModuleType) -> None:
         loader.load_module(module.__name__)
     else:
         loader.exec_module(module)
+
+
+class MType(Flag):
+    Regular = 0
+    Lazy = auto()
+    ShortcutCollection = auto()
+
+
+class _LazyImports:
+    def __init__(self) -> None:
+        self._modules: dict[str, MType] = {}
+        self.__objects: dict[str, dict[str, int]] = {}
+        self._catchall = False
+
+    def set_catchall(self, value):
+        self._catchall = value
+
+    def __contains__(self, x: str) -> bool:
+        return self._catchall or x in self._modules
+
+    def __getitem__(self, item: str) -> dict[str, int]:
+        return self.__objects.get(item, {})
+
+    def __iter__(self) -> Iterator[str]:
+        yield from self._modules
+        yield from (
+            f"{mod}:{obj}#{count}" if count >= 0 else f"{mod}:{obj}"
+            for mod, objs in self.__objects.items()
+            for obj, count in objs.items()
+        )
+
+    def get_module_type(self, fullname: str) -> MType:
+        return self._modules.get(fullname, MType.Lazy)
+
+    def submodule(self, name: str) -> set[str]:
+        prefix = name + "."
+        return {mod[len(prefix) :] for mod in self._modules if mod.startswith(prefix)}
+
+    def clear(self) -> None:
+        self._modules.clear()
+        self.__objects.clear()
+
+    def add(self, value: str) -> None:
+        obj = None
+        if ":" in value:
+            value, obj = value.split(":", 1)
+
+        module_type = self._modules.get(value, MType.Regular)
+
+        if value.startswith("~"):
+            module_type |= MType.ShortcutCollection
+            value = value[1:]
+        else:
+            module_type |= MType.Lazy
+
+        if obj:
+            module_type |= MType.Lazy
+            obj, count = obj.split("#", 1) if "#" in obj else (obj, -1)
+
+            mod_objects = self.__objects.setdefault(value, {})
+            mod_objects[obj] = int(count) * 2
+
+        self._modules[value] = module_type
+
+    def update(self, value: Iterable[str]) -> None:
+        for v in value:
+            self.add(v)
+
+
+class SCModule(ModuleType):
+    def __getattribute__(self, item: str) -> Any:
+        value = super().__getattribute__(item)
+
+        if isinstance(value, LazyObjectProxy):
+            setattr(self, item, value := value._LazyObjectProxy__obj)
+
+        return value
 
 
 class LazyModule(ModuleType):
@@ -154,19 +182,25 @@ class LazyModule(ModuleType):
 
 
 class LazyLoaderWrapper(Loader):
-    def __init__(self, loader: Loader) -> None:
+    def __init__(self, loader: Loader, module_type: MType) -> None:
         self.loader = loader
-        self.is_lazy = True
+        self.is_lazy = MType.Lazy in module_type
+        self.is_sc = MType.ShortcutCollection in module_type
 
     def create_module(self, spec: ModuleSpec) -> ModuleType:
-        return LazyModule(spec.name)
+        if self.is_lazy:
+            return LazyModule(spec.name)
+
+        return SCModule(spec.name)
 
     def exec_module(self, module: ModuleType) -> None:
         if self.is_lazy:
             self.is_lazy = False
             return None
 
-        self._cleanup(module)
+        if isinstance(module, LazyModule):
+            self._cleanup(module)
+
         return self.loader.exec_module(module)
 
     def _cleanup(self, module: ModuleType) -> None:
@@ -174,7 +208,8 @@ class LazyLoaderWrapper(Loader):
             module.__spec__.loader = self.loader
         if _LAZY_SUBMODULES in module.__dict__:
             delattr(module, _LAZY_SUBMODULES)
-        module.__class__ = ModuleType
+
+        module.__class__ = SCModule if self.is_sc else ModuleType
 
 
 class LazyPathFinder(MetaPathFinder):
@@ -200,7 +235,8 @@ class LazyPathFinder(MetaPathFinder):
         if spec.loader is None:
             return None
 
-        spec.loader = LazyLoaderWrapper(spec.loader)
+        module_type = self.lazy_modules.get_module_type(fullname)
+        spec.loader = LazyLoaderWrapper(spec.loader, module_type)
         return spec
 
 
@@ -455,3 +491,6 @@ def install() -> None:
 
     _INSTALLED = True
     sys.meta_path.insert(0, LazyPathFinder(lazy_modules))
+
+
+lazy_modules: _LazyImports = _LazyImports()
