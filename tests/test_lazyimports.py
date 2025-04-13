@@ -256,3 +256,42 @@ def test_counted_proxy_objects_2(
         assert captured.out == "fake_package\n"
 
         World()
+
+
+def test_shortcut_collection(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports(
+        "~fake_package.sc", "fake_package.sc.submodule:World"
+    ):
+        import fake_package.sc
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.sc\n"
+
+    assert isinstance(fake_package.sc.submodule.World, lazyimports.LazyObjectProxy)
+    assert not isinstance(fake_package.sc.World, lazyimports.LazyObjectProxy)
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package.sc.submodule\n"
+
+
+def test_non_shortcut_collection(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazyimports.lazy_imports("fake_package.sc.submodule:World"):
+        import fake_package.sc
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.sc\n"
+
+    assert isinstance(fake_package.sc.submodule.World, lazyimports.LazyObjectProxy)
+    assert isinstance(fake_package.sc.World, lazyimports.LazyObjectProxy)
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+
+    fake_package.sc.World()
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package.sc.submodule\nWorld\n"
