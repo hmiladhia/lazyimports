@@ -80,7 +80,7 @@ class _LazyImports:
             obj, count = obj.split("#", 1) if "#" in obj else (obj, -1)
 
             mod_objects = self.__objects.setdefault(value, {})
-            mod_objects[obj] = int(count) * 2
+            mod_objects[obj] = int(count)
 
         self._modules[value] = module_type
 
