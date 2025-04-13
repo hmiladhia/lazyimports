@@ -454,6 +454,9 @@ def _load_module(module: ModuleType) -> None:
 def lazy_imports(
     *modules: str, extend: bool = True, catchall=False
 ) -> Generator[None, None, None]:
+    if not modules and not catchall and extend:
+        return (yield)
+
     original_value = {*lazy_modules}
 
     try:
