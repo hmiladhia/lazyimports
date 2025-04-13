@@ -44,7 +44,12 @@ class _LazyImports:
         return self.__objects.get(item, {})
 
     def __iter__(self) -> Iterator[str]:
-        yield from self._modules
+        yield from (
+            "~" + mod
+            for mod, value in self._modules.items()
+            if MType.ShortcutCollection in value
+        )
+        yield from (mod for mod, value in self._modules.items() if MType.Lazy in value)
         yield from (
             f"{mod}:{obj}#{count}" if count >= 0 else f"{mod}:{obj}"
             for mod, objs in self.__objects.items()
