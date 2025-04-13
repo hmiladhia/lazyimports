@@ -211,7 +211,7 @@ def test_lazy_object_ge(
 def test_catchall(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports():
+    with lazyimports.lazy_imports(catchall=True):
         import json
         import fake_package
 

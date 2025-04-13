@@ -22,35 +22,6 @@ _LAZY_SUBMODULES = "lazy+submodules"
 _LAZY_OBJECTS = "lazy+objects"
 
 
-def _load_parent_module(fullname: str) -> None:
-    if not (parent := ".".join(fullname.split(".")[:-1])):
-        return
-
-    if not (parent_module := sys.modules.get(parent)):
-        return
-
-    if isinstance(parent_module, LazyModule):
-        _load_module(parent_module)
-
-
-def _load_module(module: ModuleType) -> None:
-    if not isinstance(module, LazyModule):
-        return
-
-    _load_parent_module(module.__name__)
-
-    if (spec := module.__spec__) is None:
-        return
-
-    if (loader := spec.loader) is None:
-        return
-
-    if not hasattr(loader, "exec_module"):
-        loader.load_module(module.__name__)
-    else:
-        loader.exec_module(module)
-
-
 class MType(Flag):
     Regular = 0
     Lazy = auto()
@@ -445,12 +416,41 @@ class LazyObjectProxy:
         return self.__lobj
 
 
+def _load_parent_module(fullname: str) -> None:
+    if not (parent := ".".join(fullname.split(".")[:-1])):
+        return
+
+    if not (parent_module := sys.modules.get(parent)):
+        return
+
+    if isinstance(parent_module, LazyModule):
+        _load_module(parent_module)
+
+
+def _load_module(module: ModuleType) -> None:
+    if not isinstance(module, LazyModule):
+        return
+
+    _load_parent_module(module.__name__)
+
+    if (spec := module.__spec__) is None:
+        return
+
+    if (loader := spec.loader) is None:
+        return
+
+    if not hasattr(loader, "exec_module"):
+        loader.load_module(module.__name__)
+    else:
+        loader.exec_module(module)
+
+
 @contextlib.contextmanager
 def lazy_imports(
-    *modules: str, extend: bool = False, catchall=None
+    *modules: str, extend: bool = True, catchall=False
 ) -> Generator[None, None, None]:
     original_value = {*lazy_modules}
-    catchall = not modules if catchall is None else catchall
+
     try:
         lazy_modules.set_catchall(catchall)
         if not extend:
