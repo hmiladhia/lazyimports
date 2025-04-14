@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence, Generator, Iterator
 
 __author__ = "Dhia Hmila"
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 Undefined = object()
 
