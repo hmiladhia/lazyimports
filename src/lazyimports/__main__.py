@@ -57,7 +57,7 @@ def imports_from_tree(fullname: str, tree: ast.AST):
         if isinstance(node, ast.Import):
             yield from (n.name for n in node.names)
         elif isinstance(node, ast.ImportFrom):
-            if (level := node.level) >= 1:
+            if (level := node.level) > 1:
                 module = ".".join(parts[: 1 - level] + [node.module])
             elif level == 1:
                 module = fullname + "." + node.module
