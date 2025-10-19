@@ -1,14 +1,16 @@
+import sys
 from collections.abc import Generator
 
 import pytest
 
 import lazyimports
+from lazyimports import lazy_imports, MType
+
+FAKE_PACKAGE_NAME = "fake_package"
 
 
 @pytest.fixture(autouse=True)
 def _mock_imports() -> Generator[None, None, None]:
-    import sys
-
     og_modules = sys.modules.copy()
     try:
         yield
@@ -18,7 +20,7 @@ def _mock_imports() -> Generator[None, None, None]:
 
 
 def test_lazy_package(capsys: pytest.CaptureFixture[str]) -> None:
-    with lazyimports.lazy_imports("fake_package"):
+    with lazy_imports(FAKE_PACKAGE_NAME):
         import fake_package
 
     captured = capsys.readouterr()
@@ -39,7 +41,7 @@ def test_eager_package(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_lazy_module(capsys: pytest.CaptureFixture[str]) -> None:
-    with lazyimports.lazy_imports("fake_package.submodule"):
+    with lazy_imports("fake_package.submodule"):
         import fake_package.submodule
 
     captured = capsys.readouterr()
@@ -50,7 +52,7 @@ def test_lazy_module(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_lazy_module_with_parents(capsys: pytest.CaptureFixture[str]) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
+    with lazy_imports(FAKE_PACKAGE_NAME, "fake_package.submodule"):
         import fake_package.submodule
 
     captured = capsys.readouterr()
@@ -61,8 +63,30 @@ def test_lazy_module_with_parents(capsys: pytest.CaptureFixture[str]) -> None:
     assert captured.out == "fake_package\nfake_package.submodule\nHello\n"
 
 
-def test_eager_module_with_lazy_siblings(capsys: pytest.CaptureFixture[str]) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
+def test_eager_module_with_lazy_siblings(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazy_imports(FAKE_PACKAGE_NAME):
+        import fake_package.submodule
+        import fake_package.anothermodule
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+
+    fake_package.submodule.hello()
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.submodule\nHello\n"
+
+    fake_package.anothermodule.hello()
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package.anothermodule\nHello\n"
+
+
+def test_eager_module_with_lazy_siblings_explicit(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazy_imports(FAKE_PACKAGE_NAME, "fake_package.submodule", explicit=True):
         import fake_package.submodule
         import fake_package.anothermodule
 
@@ -77,7 +101,7 @@ def test_eager_module_with_lazy_siblings(capsys: pytest.CaptureFixture[str]) -> 
 def test_eager_module_eager_siblings_lazy_parent(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package"):
+    with lazy_imports(FAKE_PACKAGE_NAME, explicit=True):
         import fake_package.submodule
         import fake_package.anothermodule
 
@@ -95,7 +119,7 @@ def test_eager_module_eager_siblings_lazy_parent(
 def test_lazy_module_set_value(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
+    with lazy_imports(FAKE_PACKAGE_NAME, "fake_package.submodule", explicit=True):
         import fake_package.submodule as submodule  # noqa: PLR0402
 
     captured = capsys.readouterr()
@@ -110,10 +134,13 @@ def test_lazy_module_set_value(
     assert captured.out == "Hello\n"
 
 
+# |TODO: add test case for implicit and submodules
+
+
 def test_from_import_module(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
+    with lazy_imports(FAKE_PACKAGE_NAME, "fake_package.submodule"):
         from fake_package import submodule
 
     captured = capsys.readouterr()
@@ -126,7 +153,7 @@ def test_from_import_module(
 def test_from_import_func(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.submodule"):
+    with lazy_imports(FAKE_PACKAGE_NAME, "fake_package.submodule"):
         from fake_package import hello
 
     captured = capsys.readouterr()
@@ -139,7 +166,7 @@ def test_from_import_func(
 def test_lazy_subpackage(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.subpackage"):
+    with lazy_imports(FAKE_PACKAGE_NAME, "fake_package.subpackage"):
         import fake_package.subpackage
 
     captured = capsys.readouterr()
@@ -152,7 +179,9 @@ def test_lazy_subpackage(
 def test_lazy_object(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package:hello"):
+    with lazy_imports(FAKE_PACKAGE_NAME) as ctx:
+        ctx.add_objects(FAKE_PACKAGE_NAME, "hello")
+
         from fake_package import hello
 
     captured = capsys.readouterr()
@@ -165,7 +194,9 @@ def test_lazy_object(
 def test_lazy_object_array(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package.submodule:array"):
+    with lazy_imports("fake_package.submodule") as ctx:
+        ctx.add_objects("fake_package.submodule", "array")
+
         from fake_package.submodule import array
 
     captured = capsys.readouterr()
@@ -178,7 +209,9 @@ def test_lazy_object_array(
 def test_lazy_object_integer(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.submodule:integer"):
+    with lazy_imports(FAKE_PACKAGE_NAME) as ctx:
+        ctx.add_objects("fake_package.submodule", "integer")
+
         from fake_package.submodule import integer
 
     captured = capsys.readouterr()
@@ -198,7 +231,8 @@ def test_lazy_object_integer(
 def test_lazy_object_ge(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package", "fake_package.submodule:integer"):
+    with lazy_imports(FAKE_PACKAGE_NAME) as ctx:
+        ctx.add_objects("fake_package.submodule", "integer")
         from fake_package.submodule import integer
 
     captured = capsys.readouterr()
@@ -208,10 +242,10 @@ def test_lazy_object_ge(
     assert captured.out == "fake_package\nfake_package.submodule\n"
 
 
-def test_catchall(
+def test_external(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports(catchall=True):
+    with lazy_imports(FAKE_PACKAGE_NAME, "json"):
         import json
         import fake_package
 
@@ -222,97 +256,47 @@ def test_catchall(
     assert captured.out == "fake_package\n[]\n"
 
 
-def test_counted_proxy_objects_1(
+def test_export_modules(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with lazyimports.lazy_imports("fake_package:World#2"):
-        from fake_package import World
+    with lazy_imports() as ctx:
+        ctx.add_module("fake_package.exporter", module_type=MType.Export)
+
+        import fake_package.exporter
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.exporter\n"
+
+    assert isinstance(
+        fake_package.exporter.submodule.World, lazyimports.LazyObjectProxy
+    )
+    assert not isinstance(fake_package.exporter.World, lazyimports.LazyObjectProxy)
+    assert not isinstance(
+        fake_package.exporter.submodule.World, lazyimports.LazyObjectProxy
+    )
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package.exporter.submodule\n"
+
+
+def test_non_export_modules(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with lazy_imports():
+        import fake_package.exporter
+
+    captured = capsys.readouterr()
+    assert captured.out == "fake_package\nfake_package.exporter\n"
+
+    assert isinstance(
+        fake_package.exporter.submodule.World, lazyimports.LazyObjectProxy
+    )
+    assert isinstance(fake_package.exporter.World, lazyimports.LazyObjectProxy)
 
     captured = capsys.readouterr()
     assert captured.out == ""
 
-    with lazyimports.lazy_imports("fake_package:World#27"):
-        from fake_package import World
+    fake_package.exporter.World()
 
     captured = capsys.readouterr()
-    assert captured.out == "fake_package\n"
-
-    World()
-
-
-def test_counted_proxy_objects_2(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    with lazyimports.lazy_imports("fake_package:World#4"):
-        from fake_package import World
-        from fake_package import World  # noqa: F811
-
-        captured = capsys.readouterr()
-        assert captured.out == ""
-
-        from fake_package import World  # noqa: F811
-
-        captured = capsys.readouterr()
-        assert captured.out == "fake_package\n"
-
-        World()
-
-
-def test_counted_proxy_objects_3(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    with lazyimports.lazy_imports("fake_package:World#4"):
-        import fake_package
-        from fake_package import World
-
-        _ = fake_package.World
-        _ = fake_package.World
-
-        captured = capsys.readouterr()
-        assert captured.out == ""
-
-        from fake_package import World  # noqa: F811
-
-        captured = capsys.readouterr()
-        assert captured.out == "fake_package\n"
-
-        World()
-
-
-def test_shortcut_collection(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    with lazyimports.lazy_imports(
-        "~fake_package.sc", "fake_package.sc.submodule:World"
-    ):
-        import fake_package.sc
-
-    captured = capsys.readouterr()
-    assert captured.out == "fake_package\nfake_package.sc\n"
-
-    assert isinstance(fake_package.sc.submodule.World, lazyimports.LazyObjectProxy)
-    assert not isinstance(fake_package.sc.World, lazyimports.LazyObjectProxy)
-
-    captured = capsys.readouterr()
-    assert captured.out == "fake_package.sc.submodule\n"
-
-
-def test_non_shortcut_collection(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    with lazyimports.lazy_imports("fake_package.sc.submodule:World"):
-        import fake_package.sc
-
-    captured = capsys.readouterr()
-    assert captured.out == "fake_package\nfake_package.sc\n"
-
-    assert isinstance(fake_package.sc.submodule.World, lazyimports.LazyObjectProxy)
-    assert isinstance(fake_package.sc.World, lazyimports.LazyObjectProxy)
-
-    captured = capsys.readouterr()
-    assert captured.out == ""
-
-    fake_package.sc.World()
-
-    captured = capsys.readouterr()
-    assert captured.out == "fake_package.sc.submodule\nWorld\n"
+    assert captured.out == "fake_package.exporter.submodule\nWorld\n"

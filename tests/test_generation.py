@@ -2,8 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from lazyimports import LazyModules
-from lazyimports.__main__ import auto_detect
+from lazyimports.static import auto_detect, LazyEntity
 
 
 @pytest.fixture
@@ -12,12 +11,11 @@ def tests_path() -> Path:
 
 
 def test_generation(tests_path):
-    lazy_modules = LazyModules()
-    lazy_modules.update(auto_detect(tests_path / "fake_package"))
+    result = auto_detect(tests_path / "fake_package")
 
-    result = ",".join(lazy_modules)
-    expected = (
-        "~fake_package.sc,fake_package.sc.submodule,fake_package.sc.submodule:World#2"
-    )
+    expected = {
+        str(LazyEntity.LazyExporter): {"fake_package.exporter"},
+        str(LazyEntity.LazyObject): {"fake_package.exporter.submodule:World"},
+    }
 
     assert result == expected

@@ -2,9 +2,9 @@ name: Running Tests
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
   pull_request:
-    branches: [ main, dev ]
+    branches: [main, dev]
   workflow_call:
   workflow_dispatch:
 
@@ -37,24 +37,24 @@ jobs:
 
   tests:
     name: 🧪 Tests
-    needs: [ pre_commit ]
+    needs: [pre_commit]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - name: 🛎️ Checkout
-      uses: actions/checkout@v4
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v4
 
-    - name: 🧰 Install uv
-      uses: astral-sh/setup-uv@v3
+      - name: 🧰 Install uv
+        uses: astral-sh/setup-uv@v3
 
-    - name: 🐍 Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: 🧪 Run tests with tox
-      run: uvx --with tox-gh-actions --with "tox-uv>=1" tox run
+      - name: 🧪 Run tests with tox
+        run: uvx --with tox-gh-actions --with "tox-uv>=1" tox run
