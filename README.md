@@ -18,7 +18,7 @@
 Install `lazyimports` via pip:
 
 ```sh
-pip install auto-lazy-imports
+pip install pylazyimports
 ```
 
 ## Usage 👍
@@ -168,11 +168,11 @@ For example, if you add `hatch-lazyimports` to your build system ( and enable it
 
 ```toml
 [project]
-dependencies = ["auto-lazy-imports>=0.5.0"]
+dependencies = ["pylazyimports>=0.1.0"]
 dynamic = ['entry-points', 'entry-points.lazyimports', 'entry-points.lazyexporters']
 
 [build-system]
-requires = ["hatchling", "hatch-lazyimports"]
+requires = ["hatchling", "pylazyimports-eps"]
 build-backend = "hatchling.build"
 
 [tool.hatch.metadata.hooks.lazyimports]

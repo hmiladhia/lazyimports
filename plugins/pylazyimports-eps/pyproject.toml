@@ -1,5 +1,5 @@
 [project]
-name = "hatch-lazyimports"
+name = "pylazyimports-eps"
 authors = [{ name = "Dhia Hmila" }]
 description = "Hatch plugin to automaticilly detect and fill lazyimport entrypoints"
 license = { text = "MIT License" }
@@ -37,7 +37,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "src/lazyimports_completion/__init__.py"
+path = "src/lazyimports_entrypoints/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -50,12 +50,13 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lazyimports_completion"]
+packages = ["src/lazyimports_entrypoints"]
+
 [tool.hatch.build.targets.wheel.sources]
-"src/lazyimports_completion" = "lazyimports_completion"
+"src/lazyimports_entrypoints" = "lazyimports_entrypoints"
 
 [project.entry-points.hatch]
-lazyimports = "lazyimports_completion.hooks"
+lazyimports = "lazyimports_entrypoints.hatchling.hooks"
 
 # == Linting
 [tool.ruff]
