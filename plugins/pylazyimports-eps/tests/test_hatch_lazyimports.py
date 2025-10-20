@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import zipfile
 import configparser
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -17,6 +16,7 @@ from lazyimports_entrypoints.hatchling.lazyimports_hook import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from lazyimports_entrypoints.hatchling.lazyimports_hook import LazyimportsHook
 
 
@@ -52,7 +52,7 @@ __all__ = ["other_module"]
 """
 
 
-@pytest.fixture()
+@pytest.fixture
 def project_path(tmp_path: Path) -> Path:
     project_path = tmp_path / "cowboy"
     pkg_file_path = project_path.joinpath("src/cowboy/__init__.py")

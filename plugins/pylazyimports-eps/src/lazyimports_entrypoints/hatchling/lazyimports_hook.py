@@ -17,7 +17,7 @@ class LazyimportsHook(MetadataHookInterface):
 
     def update(self, metadata: dict[str, Any]) -> None:
         if not self.config.get("enabled", True):
-            return None
+            return
 
         if not (packages := self.config.get("packages")):
             cfg: WheelBuilderConfig = WheelBuilder(self.root).config

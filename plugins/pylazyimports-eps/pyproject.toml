@@ -29,7 +29,6 @@ Issues = "https://github.com/hmiladhia/lazyimports/issues"
 [dependency-groups]
 dev = [{ include-group = "tests" }]
 tests = ["pytest>=8.3.4", "pytest-sugar", "build"]
-linting = ["ruff==0.7.3"]
 
 # == Build System ==
 [build-system]
@@ -58,37 +57,7 @@ packages = ["src/lazyimports_entrypoints"]
 [project.entry-points.hatch]
 lazyimports = "lazyimports_entrypoints.hatchling.hooks"
 
-# == Linting
-[tool.ruff]
-target-version = "py39"
-[tool.ruff.lint]
-select = [
-  "A",   # flake8-builtins
-  "B",   # flake8-bugbear
-  "E",   # pycodestyle - Error
-  "W",   # pycodestyle - Warning
-  "F",   # Pyflakes
-  "N",   # pep8-naming
-  "S",   # flake8-bandit
-  "RUF", # Ruff-specific rules
-  "PLC", # Pylint Convention
-  "PLE", # Pylint Error
-  "PLW", # Pylint Warning
-  "PLR", # Pylint Refactor
-  "Q",   # flake8-quotes
-]
-
-
-[tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["S101"]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 6
-
-[tool.ruff.lint.pycodestyle]
-max-line-length = 100
-ignore-overlong-task-comments = true
-
+# == Tests Config ==
 
 [tool.tox]
 min_version = "4"

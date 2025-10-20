@@ -2,7 +2,7 @@
 name = "pylazyimports"
 authors = [{ name = "Dhia Hmila" }]
 description = "A module to enable lazy imports using native python syntax"
-license = { text = "MIT License" }
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
 keywords = []
 readme = "README.md"
@@ -25,20 +25,26 @@ Issues = "https://github.com/hmiladhia/lazyimports/issues"
 
 [dependency-groups]
 dev = [{ include-group = "tests" }, { include-group = "workspace" }]
-workspace = ["pylazyimports-eps"]
-tests = ["pytest>=8.3.4", "pytest-sugar", "build"]
-linting = ["ruff==0.7.3", "mypy"]
+workspace = ["pylazyimports", "pylazyimports-eps"]
+tests = [
+    "pytest>=8.3.4",
+    "pytest-sugar",
+    "build",
+    { include-group = "workspace" },
+]
+ci = ["coverage", { include-group = "tests" }]
+linting = ["ruff==0.11.*", "mypy==0.16.*"]
 
 
-# == Dependency Manager ==
+# == Dependency Management ==
 [tool.uv.workspace]
 members = ["plugins/*"]
 
 [tool.uv.sources]
-pylazy-imports = { workspace = true }
+pylazyimports = { workspace = true }
 pylazyimports-eps = { workspace = true }
 
-# == Build System ==
+# == Build and Environment Config ==
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -52,6 +58,8 @@ path = "src/lazyimports/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
+    "/packages/",
+    "/plugins/",
     "tests/",
     ".github/",
     "uv.lock",
@@ -66,7 +74,14 @@ packages = ["src/lazyimports"]
 [tool.hatch.build.targets.wheel.sources]
 "src/lazyimports" = "lazyimports"
 
+[tool.commitizen]
+tag_format = "v$version"
+provider = "py-dist"
+update_changelog_on_bump = true
+changelog_merge_prerelease = true
+version_files = ["src/lazyimports/__init__.py:__version__"]
 
+# == Linting Rules ==
 [tool.ruff]
 target-version = "py310"
 
@@ -106,7 +121,7 @@ extend-select = [
     "RSE",   # flake8-raise (RSE)
 
     # Typing
-    # "ANN", # flake8-annotations
+    "ANN", # flake8-annotations
     "PYI", # flake8-pyi
     "TCH", # flake8-type-checking
 
@@ -130,16 +145,17 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**.py" = ["S101", "ANN201", "PLC0415"]
-"!tests/**.py" = ["PT"]
-"**/_proxy.py" = ["PLC0415"]
+"**/tests/**.py" = ["S101", "ANN201", "PLC0415"]
+"!**/tests/**.py" = ["PT"]
+"**/_proxy.py" = ["ANN", "PLC0415"]
+"**/_modules.py" = ["ANN401"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 6
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 100
 ignore-overlong-task-comments = true
-
-[tool.ruff.lint.mccabe]
-max-complexity = 6
 
 [tool.mypy]
 python_version = "3.10"
@@ -147,21 +163,26 @@ warn_return_any = true
 warn_unused_configs = true
 strict = true
 ignore_missing_imports = true
-disallow_untyped_decorators = false
+
+# == Tests config ==
+[tool.coverage.run]
+source = ["src"]
+relative_files = true
+branch = true
 
 [tool.tox]
 min_version = "4"
-requires = ["tox>=4.19", "tox-uv>=1"]
+requires = ["tox>=4.31", "tox-uv>=1.29.0"]
 env_list = [
     "format",
     "lint",
     "type",
+    "ipython",
     "3.14",
     "3.13",
     "3.12",
     "3.11",
     "3.10",
-    "ipython",
 ]
 
 # This is a workaround
@@ -172,35 +193,15 @@ python = """
 	3.11: py311
 	3.12: py312
 	3.13: py313
-    3.13: py314
-	ipython: py311
+    3.14: py314
+    ipython: py312
 	"""
 
 [tool.tox.env_run_base]
+runner = "uv-venv-lock-runner"
 description = "run unit tests"
 dependency_groups = ["tests"]
-commands = [
-    [
-        "pytest",
-        { replace = "posargs", default = [
-            "tests",
-        ], extend = true },
-    ],
-]
-
-[tool.tox.env.ipython]
-description = "run unit tests in ipython"
-deps = ["ipython"]
-commands = [
-    [
-        "ipython",
-        "-m",
-        "pytest",
-        { replace = "posargs", default = [
-            "tests",
-        ], extend = true },
-    ],
-]
+commands = [["pytest", { replace = "posargs", default = ["."], extend = true }]]
 
 [tool.tox.env.format]
 description = "run formatter"
@@ -226,6 +227,19 @@ commands = [
         "check",
         { replace = "posargs", default = [
             ".",
+        ], extend = true },
+    ],
+]
+
+[tool.tox.env.type]
+description = "run type checks"
+dependency_groups = ["linting"]
+commands = [
+    [
+        "mypy",
+        { replace = "posargs", default = [
+            "src",
+            "packages/*/src",
         ], extend = true },
     ],
 ]

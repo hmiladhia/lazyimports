@@ -10,7 +10,7 @@ def tests_path() -> Path:
     return Path(__file__).parent
 
 
-def test_generation(tests_path):
+def test_generation(tests_path: Path):
     result = auto_detect(tests_path / "fake_package")
 
     expected = {

@@ -1,0 +1,5 @@
+rules:
+  unpinned-uses:
+    ignore:
+      - quality.yml
+      - publish.yml

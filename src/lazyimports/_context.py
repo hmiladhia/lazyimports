@@ -8,6 +8,7 @@ from importlib.metadata import entry_points
 
 
 if TYPE_CHECKING:
+    from types import TracebackType
     from collections.abc import Iterable
 
 LAZY_OBJECTS_ENTRYPOINT = "lazyimports"
@@ -32,7 +33,12 @@ class LazyImportContext:
         self._is_active = True
         return self
 
-    def __exit__(self, *exc_details):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool | None:
         self._is_active = False
 
     def __copy__(self) -> Self:
@@ -63,7 +69,7 @@ class LazyImportContext:
 
         return ctx
 
-    def set_explicit_mode(self, value: bool = True):
+    def set_explicit_mode(self, value: bool = True) -> None:
         self._explicit_mode = value
 
     def get_module_type(self, fullname: str) -> MType:
@@ -92,7 +98,7 @@ class LazyImportContext:
     def __getitem__(self, fullname: str) -> set[str]:
         return self._objects.get(fullname, set())
 
-    def add_module(self, fullname: str, module_type: MType = MType.Lazy):
+    def add_module(self, fullname: str, module_type: MType = MType.Lazy) -> None:
         if MType.Lazy in module_type:
             self._lazy_modules.add(fullname)
 
