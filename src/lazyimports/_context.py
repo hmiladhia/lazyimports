@@ -10,6 +10,9 @@ from importlib.metadata import entry_points
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+LAZY_OBJECTS_ENTRYPOINT = "lazyimports"
+LAZY_EXPORTERS_ENTRYPOINT = "lazyexporters"
+
 
 class MType(Flag):
     Regular = 0
@@ -48,14 +51,14 @@ class LazyImportContext:
 
         for obj in (
             object_id.strip()
-            for entry in entry_points(group="lazyimports")
+            for entry in entry_points(group=LAZY_OBJECTS_ENTRYPOINT)
             for object_id in entry.value.split(",")
             if object_id.strip()
         ):
             modname, _, object_name = obj.partition(":")
             ctx.add_objects(modname, object_name)
 
-        for entry in entry_points(group="lazyexporters"):
+        for entry in entry_points(group=LAZY_EXPORTERS_ENTRYPOINT):
             ctx.add_module(entry.value.strip(), module_type=MType.Export)
 
         return ctx

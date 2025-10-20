@@ -11,7 +11,7 @@
 
 ## Overview 🌐
 
-**Lazyimports** is a Python module that enables lazy imports using native Python syntax, reducing startup time and improving performance by delaying module loading until needed.
+**Lazyimports** is a Python module that enables lazy imports using native Python syntax, reducing startup time by delaying module loading until needed and help export public API without losing auto-completion/linting.
 
 ## Installation 🔨
 
@@ -25,127 +25,112 @@ pip install auto-lazy-imports
 
 ### 1. Using a `with` Statement
 
-Wrap imports in a `with` statement to enable lazy loading:
+Wrap imports in a `with` statement and add at least a package name to enable lazy loading. All of its submodules will also be lazy loaded.
 
 ```python
 import lazyimports
 
-with lazyimports.lazy_imports(catchall=True):
+with lazyimports.lazy_imports("package"):
     from package import submodule
 
 submodule.hello()
 ```
 
-Note: With catchall enabled, all modules under the with statement will be lazily loaded. However, you can also explicitly specify which packages to load lazily by providing them as arguments.
-This is especially useful, if you want to use lazy objects
+💡 Note: With the `explicit` option enabled, all modules and submodules have to be specified explicitly for them to be lazy imported. Use this when you want more control.
 
 ```python
 import lazyimports
 
-with lazyimports.lazy_imports("package:function", "package.subpackage"):
+with lazyimports.lazy_imports("package", "package.subpackage", explicit=True):
     import package.subpackage
-    from package import function
 
 package.subpackage.hello()
-function()
 ```
 
-### 2. Configuring via `pyproject.toml`
+### 2. Lazy Objects
+
+To load `objects`/`functions`/`classes` lazily, you need to add them to the import context:
+
+```python
+with lazyimports.lazy_imports("package") as ctx:
+    ctx.add_objects("package", "function")
+
+    from package import function
+
+result = function()
+```
+
+### 3. Configuring via `pyproject.toml`
 
 Define lazy-loaded modules and objects in pyproject.toml for package-based usage.
 
-#### Standard configuration:
+#### Standard configuration - PEP 621
 
 ```toml
 [project.entry-points.lazyimports]
-"lazy_modules" = "package,package.submodule"
-"lazy_functions" = "package:hello"
-"lazy_objects" = "package:array,package:integer"
+"lazy_function" = "package:function"
+"lazy_array" = "package:array"
+"lazy_integer" = "package:integer"
 ```
 
-#### Poetry-based configuration:
+#### Poetry-based configuration
 
 ```toml
 [tool.poetry.plugins.lazyimports]
-"lazy_modules" = "package,package.submodule"
-"lazy_functions" = "package:hello"
-"lazy_objects" = "package:array,package:integer"
+"lazy_function" = "package:function"
+"lazy_array" = "package:array"
+"lazy_integer" = "package:integer"
 ```
 
-💡 The keys (lazy_modules, lazy_functions, etc.) can be listed in any order, using comma-separated values.
-
-The previous example is also equivalent to:
-
-```toml
-[project.entry-points.lazyimports]
-"custom_key" = "package,package.submodule,package:hello,package:array,package:integer"
-```
-
-
-After defining the configuration, import modules as usual—no code modifications needed:
+After defining the configuration, import lazy objects with no need to add them to the context as they are automatically added:
 
 ```python
-from package import submodule
-from package import hello
-```
-
-### 3. Using an Environment Variable (for Development)
-
-Dynamically enable lazy imports by setting an environment variable:
-
-```sh
-export PYTHON_LAZY_IMPORTS="package,package.submodule,package:array,package:integer,package:hello"
-python script.py
+with lazyimports.lazy_imports("package"):
+    from package import function
 ```
 
 ## Advanced Usage 🧑‍🏫
 
-### 1. Counted Lazy objects
+### 1. Re-export Modules
 
-Sometimes you want to use have limit the lazy imports of a certain object to your package. In that cas, you can use counted Lazy objects, which will only lazy import an object a limited number of times.
+`Re-Export` modules are a special kind of modules, that will import lazy objects from other modules to provide an import "shortcut" ( or in other terms to re-export them again).
 
-```python
-import lazyimports
+This is a common pattern when writing your own package, if you have too many modules and want to expose a simple public api in the `__init__.py` file.
 
-with lazyimports.lazy_imports("package:function#3"):
-    import package
-    from package import function # Lazily Imported: Counter decremented by 2 ( from ... import syntax)
-
-    package.function # Lazily Imported: Counter decremented by 1 (attribute access syntax)
-
-    from package import function # Eagerly Imported: Counter reached 0
-
-function()
-```
-
-### 2. Shortcut Collection Module
-
-Shortcut collection modules are a special kind of modules, that will import lazy objects from other modules to provide an import shortcut.
-
-If you import a lazy object from a shortcut collection, it will trigger an automatic import.
+If you import a lazy object from a `re-export` module, it will trigger an automatic import and the the user will get the **real** object not a `LazyObjectProxy`. This is great if you want your package to behave with packages like `pydantic`.
 
 Here is a common pattern using counted lazy objects and shortcut collection modules:
 
 ```bash
-├───my_package
+├─── my_package
 │   ├───submodule1.py
 │   ├───submodule2.py
 │   └───__init__.py
-└───main.py
+├─── pyproject.toml
+└─── main.py
 ```
 
 ```python
 # my_package/__init__.py
 
-from lazyimports import lazy_imports, lazy_modules
+from lazyimports import lazy_imports
 
-lazy_modules.add("~my_package") # could also be defined in pyproject.toml
-
-with lazy_imports("my_package.submodule1:MyClass1#2", "my_package.submodule2:MyClass2#2"):
+with lazy_imports(__package__):
     from .submodule1 import MyClass1
     from .submodule2 import MyClass2
 
 __all__ = ["MyClass1", "MyClass2"]
+```
+
+```toml
+# pyproject.toml
+
+[project.entry-points.lazyimports]
+"my_package.submodule1-MyClass1" = "my_package.submodule1:MyClass1"
+"my_package.submodule2-MyClass2" = "my_package.submodule1:MyClass2"
+
+[project.entry-points.lazyexporters]
+"my_package_any_name" = "my_package"
 ```
 
 ```python
@@ -156,3 +141,42 @@ from my_package import MyClass2
 # MyClass2 is eagerly loaded ( you do not get a proxy but the real class ),
 # but MyClass1 won't be loaded until it is also imported
 ```
+
+#### Alternate version
+
+If you are not creating a package, you can achieve the same thing without the `pyproject.toml` entry-points.
+
+```python
+# main.py
+
+from lazyimports import lazy_imports, MType
+
+with lazy_imports() as ctx:  # No module is passed, there is no lazy importing involved.
+    ctx.add_module("my_package", MType.Export)
+
+    from my_package import MyClass2
+
+# MyClass2 is eagerly loaded ( you do not get a proxy but the real class ),
+# but MyClass1 won't be loaded until it is also imported
+```
+
+### 2. Filling entry-points automatically
+
+You do not have to fill the `entry-points` yourself, as it may be tedious to do every time you change your package. You can use build-plugins to fill them for you.
+
+For example, if you add `hatch-lazyimports` to your build system ( and enable it ), the plugin will analyze your code and add the lazy objects under a `with lazy_imports()` statement in the `entry-points` section.
+
+```toml
+[project]
+dependencies = ["auto-lazy-imports>=0.5.0"]
+dynamic = ['entry-points', 'entry-points.lazyimports', 'entry-points.lazyexporters']
+
+[build-system]
+requires = ["hatchling", "hatch-lazyimports"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata.hooks.lazyimports]
+enabled = true
+```
+
+⚠️ So far, only `hatchling` is supported.

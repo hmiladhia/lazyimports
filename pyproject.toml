@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
 ]
 
 [project.urls]
@@ -23,11 +24,21 @@ Repository = "https://github.com/hmiladhia/lazyimports"
 Issues = "https://github.com/hmiladhia/lazyimports/issues"
 
 [dependency-groups]
-dev = [{ include-group = "tests" }]
-tests = ["pytest>=8.3.4", "pytest-sugar"]
+dev = [{ include-group = "tests" }, { include-group = "workspace" }]
+workspace = ["hatch-lazyimports"]
+tests = ["pytest>=8.3.4", "pytest-sugar", "build"]
 linting = ["ruff==0.7.3", "mypy"]
 
 
+# == Dependency Manager ==
+[tool.uv.workspace]
+members = ["plugins/*"]
+
+[tool.uv.sources]
+auto-lazy-imports = { workspace = true }
+hatch-lazyimports = { workspace = true }
+
+# == Build System ==
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
