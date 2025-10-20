@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from lazyimports.static import auto_detect, LazyEntity
+from lazyimports_completion.analysis import auto_detect, LazyEntity
 
 
 @pytest.fixture

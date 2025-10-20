@@ -1,7 +1,7 @@
 import ast
 from pathlib import Path
 from enum import StrEnum
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 
 
 class LazyEntity(StrEnum):
@@ -10,8 +10,8 @@ class LazyEntity(StrEnum):
     LazyExporter = "lazy-exporter"
 
 
-def auto_detect(paths: list[str | Path] | str | Path) -> dict[LazyEntity, set[str]]:
-    if not isinstance(paths, list):
+def auto_detect(paths: Iterable[str | Path] | str | Path) -> dict[LazyEntity, set[str]]:
+    if isinstance(paths, (str, Path)):
         paths = [paths]
 
     entities = (
