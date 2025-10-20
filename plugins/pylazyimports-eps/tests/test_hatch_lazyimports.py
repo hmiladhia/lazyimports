@@ -11,18 +11,18 @@ from hatchling.plugin.manager import PluginManager
 from packaging.metadata import Metadata
 from build.__main__ import build_package
 
-from lazyimports_completion.lazyimports_hook import (
+from lazyimports_entrypoints.hatchling.lazyimports_hook import (
     LAZY_OBJECTS_ENTRYPOINT,
     LAZY_EXPORTERS_ENTRYPOINT,
 )
 
 if TYPE_CHECKING:
-    from lazyimports_completion.lazyimports_hook import LazyimportsHook
+    from lazyimports_entrypoints.hatchling.lazyimports_hook import LazyimportsHook
 
 
 PYPROJECT_TOML = """\
 [build-system]
-requires = ['hatchling', 'hatch-lazyimports']
+requires = ['hatchling', 'pylazyimports-eps']
 build-backend = 'hatchling.build'
 
 [project]

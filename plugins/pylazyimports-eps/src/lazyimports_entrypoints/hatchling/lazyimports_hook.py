@@ -6,7 +6,7 @@ from typing import Any
 from hatchling.builders.wheel import WheelBuilder, WheelBuilderConfig
 from hatchling.metadata.plugin.interface import MetadataHookInterface
 
-from lazyimports_completion.analysis import auto_detect, LazyEntity
+from lazyimports_entrypoints.analysis import auto_detect, LazyEntity
 
 LAZY_OBJECTS_ENTRYPOINT = "lazyimports"
 LAZY_EXPORTERS_ENTRYPOINT = "lazyexporters"

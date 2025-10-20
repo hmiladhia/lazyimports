@@ -4,53 +4,9 @@ requires-python = ">=3.10"
 
 [manifest]
 members = [
-    "auto-lazy-imports",
-    "hatch-lazyimports",
+    "pylazyimports",
+    "pylazyimports-eps",
 ]
-
-[[package]]
-name = "auto-lazy-imports"
-source = { editable = "." }
-
-[package.dev-dependencies]
-dev = [
-    { name = "build" },
-    { name = "hatch-lazyimports" },
-    { name = "pytest" },
-    { name = "pytest-sugar" },
-]
-linting = [
-    { name = "mypy" },
-    { name = "ruff" },
-]
-tests = [
-    { name = "build" },
-    { name = "pytest" },
-    { name = "pytest-sugar" },
-]
-workspace = [
-    { name = "hatch-lazyimports" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "build" },
-    { name = "hatch-lazyimports", editable = "plugins/lazyimports-completion" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-sugar" },
-]
-linting = [
-    { name = "mypy" },
-    { name = "ruff", specifier = "==0.7.3" },
-]
-tests = [
-    { name = "build" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-sugar" },
-]
-workspace = [{ name = "hatch-lazyimports", editable = "plugins/lazyimports-completion" }]
 
 [[package]]
 name = "build"
@@ -84,44 +40,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/09/35/2495c4ac46b980e4ca1f6ad6db102322ef3ad2410b79fdde159a4b0f3b92/exceptiongroup-1.2.2.tar.gz", hash = "sha256:47c2edf7c6738fafb49fd34290706d1a1a2f4d1c6df275526b62cbb4aa5393cc", size = 28883 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/02/cc/b7e31358aac6ed1ef2bb790a9746ac2c69bcb3c8588b41616914eb106eaf/exceptiongroup-1.2.2-py3-none-any.whl", hash = "sha256:3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b", size = 16453 },
-]
-
-[[package]]
-name = "hatch-lazyimports"
-source = { editable = "plugins/lazyimports-completion" }
-dependencies = [
-    { name = "hatchling" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "build" },
-    { name = "pytest" },
-    { name = "pytest-sugar" },
-]
-linting = [
-    { name = "ruff" },
-]
-tests = [
-    { name = "build" },
-    { name = "pytest" },
-    { name = "pytest-sugar" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "hatchling", specifier = ">=1.0.0" }]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "build" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-sugar" },
-]
-linting = [{ name = "ruff", specifier = "==0.7.3" }]
-tests = [
-    { name = "build" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-sugar" },
 ]
 
 [[package]]
@@ -233,6 +151,88 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/96/2d/02d4312c973c6050a18b314a5ad0b3210edb65a906f868e31c111dede4a6/pluggy-1.5.0.tar.gz", hash = "sha256:2cffa88e94fdc978c4c574f15f9e59b7f4201d439195c3715ca9e2486f1d0cf1", size = 67955 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/88/5f/e351af9a41f866ac3f1fac4ca0613908d9a41741cfcf2228f4ad853b697d/pluggy-1.5.0-py3-none-any.whl", hash = "sha256:44e1ad92c8ca002de6377e165f3e0f1be63266ab4d554740532335b9d75ea669", size = 20556 },
+]
+
+[[package]]
+name = "pylazyimports"
+source = { editable = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "build" },
+    { name = "pylazyimports-eps" },
+    { name = "pytest" },
+    { name = "pytest-sugar" },
+]
+linting = [
+    { name = "mypy" },
+    { name = "ruff" },
+]
+tests = [
+    { name = "build" },
+    { name = "pytest" },
+    { name = "pytest-sugar" },
+]
+workspace = [
+    { name = "pylazyimports-eps" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "build" },
+    { name = "pylazyimports-eps", editable = "plugins/pylazyimports-eps" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-sugar" },
+]
+linting = [
+    { name = "mypy" },
+    { name = "ruff", specifier = "==0.7.3" },
+]
+tests = [
+    { name = "build" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-sugar" },
+]
+workspace = [{ name = "pylazyimports-eps", editable = "plugins/pylazyimports-eps" }]
+
+[[package]]
+name = "pylazyimports-eps"
+source = { editable = "plugins/pylazyimports-eps" }
+dependencies = [
+    { name = "hatchling" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "build" },
+    { name = "pytest" },
+    { name = "pytest-sugar" },
+]
+linting = [
+    { name = "ruff" },
+]
+tests = [
+    { name = "build" },
+    { name = "pytest" },
+    { name = "pytest-sugar" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "hatchling", specifier = ">=1.0.0" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "build" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-sugar" },
+]
+linting = [{ name = "ruff", specifier = "==0.7.3" }]
+tests = [
+    { name = "build" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-sugar" },
 ]
 
 [[package]]

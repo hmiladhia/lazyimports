@@ -1,5 +1,5 @@
 [project]
-name = "auto-lazy-imports"
+name = "pylazyimports"
 authors = [{ name = "Dhia Hmila" }]
 description = "A module to enable lazy imports using native python syntax"
 license = { text = "MIT License" }
@@ -25,7 +25,7 @@ Issues = "https://github.com/hmiladhia/lazyimports/issues"
 
 [dependency-groups]
 dev = [{ include-group = "tests" }, { include-group = "workspace" }]
-workspace = ["hatch-lazyimports"]
+workspace = ["pylazyimports-eps"]
 tests = ["pytest>=8.3.4", "pytest-sugar", "build"]
 linting = ["ruff==0.7.3", "mypy"]
 
@@ -35,8 +35,8 @@ linting = ["ruff==0.7.3", "mypy"]
 members = ["plugins/*"]
 
 [tool.uv.sources]
-auto-lazy-imports = { workspace = true }
-hatch-lazyimports = { workspace = true }
+pylazy-imports = { workspace = true }
+pylazyimports-eps = { workspace = true }
 
 # == Build System ==
 [build-system]
