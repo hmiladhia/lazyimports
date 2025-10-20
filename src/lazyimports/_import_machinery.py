@@ -110,7 +110,7 @@ class LazyPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None = None,
         target: ModuleType | None = None,
-    ):
+    ) -> ModuleSpec | None:
         for finder in sys.meta_path:
             if isinstance(finder, LazyPathFinder):
                 continue

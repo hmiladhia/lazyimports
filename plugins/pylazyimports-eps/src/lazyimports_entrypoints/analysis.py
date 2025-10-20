@@ -11,7 +11,7 @@ class LazyEntity(StrEnum):
 
 
 def auto_detect(paths: Iterable[str | Path] | str | Path) -> dict[LazyEntity, set[str]]:
-    if isinstance(paths, (str, Path)):
+    if isinstance(paths, str | Path):
         paths = [paths]
 
     entities = (
