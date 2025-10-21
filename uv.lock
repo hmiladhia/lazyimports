@@ -376,6 +376,9 @@ wheels = [
 [[package]]
 name = "pylazyimports"
 source = { editable = "." }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
 
 [package.dev-dependencies]
 ci = [
@@ -410,6 +413,7 @@ workspace = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.15.0" }]
 
 [package.metadata.requires-dev]
 ci = [
@@ -625,6 +629,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ca/9a/778622bc06632529817c3c524c82749a112603ae2bbcf72ee3eb33a2c4f1/trove_classifiers-2025.9.11.17.tar.gz", hash = "sha256:931ca9841a5e9c9408bc2ae67b50d28acf85bef56219b56860876dd1f2d024dd", size = 16975 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/85/a4ff8758c66f1fc32aa5e9a145908394bf9cf1c79ffd1113cfdeb77e74e4/trove_classifiers-2025.9.11.17-py3-none-any.whl", hash = "sha256:5d392f2d244deb1866556457d6f3516792124a23d1c3a463a2e8668a5d1c15dd", size = 14158 },
+]
+
+[[package]]
+name = "typing-extensions"
+version = "4.15.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/94/1a15dd82efb362ac84269196e94cf00f187f7ed21c242792a923cdb1c61f/typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466", size = 109391 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548", size = 44614 },
 ]
 
 [[package]]

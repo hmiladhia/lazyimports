@@ -14,8 +14,8 @@ def test_generation(tests_path: Path):
     result = auto_detect(tests_path / "fake_package")
 
     expected = {
-        str(LazyEntity.LazyExporter): {"fake_package.exporter"},
-        str(LazyEntity.LazyObject): {"fake_package.exporter.submodule:World"},
+        LazyEntity.LazyExporter: {"fake_package.exporter"},
+        LazyEntity.LazyObject: {"fake_package.exporter.submodule:World"},
     }
 
     assert result == expected

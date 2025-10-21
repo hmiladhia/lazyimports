@@ -1,7 +1,17 @@
 import ast
+import sys
 from pathlib import Path
-from enum import StrEnum
 from collections.abc import Generator, Iterable
+
+
+if sys.version_info < (3, 11):
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        pass
+
+else:
+    from enum import StrEnum
 
 
 class LazyEntity(StrEnum):
