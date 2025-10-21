@@ -3,11 +3,18 @@ from __future__ import annotations
 import pkgutil
 from copy import copy
 from enum import Flag, auto
-from typing import Self, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from importlib.metadata import entry_points
 
 
 if TYPE_CHECKING:
+    import sys
+
+    if sys.version_info < (3, 11):
+        from typing_extensions import Self
+    else:
+        from typing import Self
+
     from types import TracebackType
     from collections.abc import Iterable
 
