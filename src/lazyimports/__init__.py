@@ -1,16 +1,14 @@
-import sys
 import contextlib
+import sys
 from collections.abc import Generator
 
-
+from ._context import LazyImportContext, MType
+from ._import_machinery import IMPORT_CONTEXT, LazyPathFinder
+from ._modules import ExportModule, LazyModule
 from ._proxy import LazyObjectProxy
-from ._modules import LazyModule, ExportModule
-from ._context import MType, LazyImportContext
-from ._import_machinery import LazyPathFinder, IMPORT_CONTEXT
-
 
 __author__ = "Dhia Hmila"
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 __all__ = [
     "ExportModule",
     "LazyModule",
@@ -29,12 +27,15 @@ def lazy_imports(
     install()
 
     new_context = LazyImportContext.from_entrypoints()
+    token = IMPORT_CONTEXT.set(new_context)
 
     try:
-        token = IMPORT_CONTEXT.set(new_context)
         with new_context:
             new_context.set_explicit_mode(explicit)
             for module_root in module_roots:
+                if module_root is None:
+                    continue
+
                 new_context.add_module(module_root)
             yield new_context
     finally:
