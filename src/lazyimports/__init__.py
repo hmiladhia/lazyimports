@@ -4,11 +4,11 @@ from collections.abc import Generator
 
 from ._context import LazyImportContext, MType
 from ._import_machinery import IMPORT_CONTEXT, LazyPathFinder
-from ._modules import ExportModule, LazyModule
-from ._proxy import LazyObjectProxy
+from ._modules import ExportModule, LazyModule, load_module
+from ._proxy import LazyObjectProxy, extract_eager_object
 
 __author__ = "Dhia Hmila"
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 __all__ = [
     "ExportModule",
     "LazyModule",
@@ -16,7 +16,9 @@ __all__ = [
     "MType",
     "__author__",
     "__version__",
+    "extract_eager_object",
     "lazy_imports",
+    "load_module",
 ]
 
 

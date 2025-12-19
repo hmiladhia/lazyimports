@@ -4,7 +4,7 @@ import sys
 from types import ModuleType
 from typing import TYPE_CHECKING
 
-from ._proxy import LazyObjectProxy
+from ._proxy import LazyObjectProxy, extract_eager_object
 
 if TYPE_CHECKING:
     from typing import Any
@@ -19,7 +19,7 @@ class ExportModule(ModuleType):
         value = super().__getattribute__(item)
 
         if isinstance(value, LazyObjectProxy):
-            setattr(self, item, value := value._LazyObjectProxy__obj)
+            setattr(self, item, value := extract_eager_object(value))
 
         return value
 
@@ -82,19 +82,21 @@ def load_parent_module(fullname: str) -> None:
         load_module(parent_module)
 
 
-def load_module(module: ModuleType) -> None:
+def load_module(module: ModuleType) -> ModuleType:
     if not isinstance(module, LazyModule):
-        return
+        return module
 
     load_parent_module(module.__name__)
 
     if (spec := module.__spec__) is None:
-        return
+        return module
 
     if (loader := spec.loader) is None:
-        return
+        return module
 
     if not hasattr(loader, "exec_module"):
         loader.load_module(module.__name__)
     else:
         loader.exec_module(module)
+
+    return module
