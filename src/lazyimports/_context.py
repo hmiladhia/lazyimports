@@ -34,7 +34,7 @@ class LazyImportContext:
         self._explicit_mode: bool = False
         self._lazy_modules: set[str] = set()
         self._sc_modules: set[str] = set()
-        self._objects: dict[str, str] = {}
+        self._objects: dict[str, set[str]] = {}
 
     def __enter__(self) -> Self:
         self._is_active = True
@@ -49,7 +49,7 @@ class LazyImportContext:
         self._is_active = False
 
     def __copy__(self) -> Self:
-        ctx = LazyImportContext()
+        ctx = type(self)()
         ctx._is_active = self._is_active
         ctx._explicit_mode = self._explicit_mode
         ctx._lazy_modules = copy(self._lazy_modules)
