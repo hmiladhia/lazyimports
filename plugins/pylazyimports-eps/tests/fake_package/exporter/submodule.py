@@ -1,5 +1,10 @@
 """DocStrings."""
 
+import lazyimports
+import lazyimports as lazy
+from lazyimports import lazy_imports
+from lazyimports import lazy_imports as lazyimports
+
 print(__name__)
 
 

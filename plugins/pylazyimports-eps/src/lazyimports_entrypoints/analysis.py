@@ -1,5 +1,6 @@
 import ast
 import sys
+from typing import Final
 from pathlib import Path
 from collections.abc import Generator, Iterable
 
@@ -12,6 +13,10 @@ if sys.version_info < (3, 11):
 
 else:
     from enum import StrEnum
+
+
+CTX_NAME: Final[str] = "lazy_imports"
+MODULE_NAME: Final[str] = "lazyimports"
 
 
 class LazyEntity(StrEnum):
@@ -61,15 +66,27 @@ def from_module_content(
 
 
 def with_from_tree(tree: ast.AST) -> Generator[ast.stmt]:
+    # This will work in most cases but is not 100% correct.
+    module_aliases, ctx_alises = get_aliases_from_tree(tree)
+
     for node in ast.walk(tree):
         if isinstance(node, ast.With):
-            if not any(is_lazy_import(item.context_expr) for item in node.items):
+            if not any(
+                is_lazy_import(
+                    item.context_expr,
+                    ctx_aliases=ctx_alises,
+                    module_alises=module_aliases,
+                )
+                for item in node.items
+            ):
                 continue
 
             yield from node.body
 
 
-def is_lazy_import(node: ast.AST) -> bool:
+def is_lazy_import(
+    node: ast.AST, ctx_aliases: set[str] | None, module_alises: set[str] | None
+) -> bool:
     if not isinstance(node, ast.Call):
         return False
 
@@ -77,17 +94,48 @@ def is_lazy_import(node: ast.AST) -> bool:
         return False
 
     func = node.func
+    ctx_aliases = ctx_aliases or {CTX_NAME}
+    module_alises = module_alises or {MODULE_NAME}
 
-    return (isinstance(func, ast.Name) and func.id == "lazy_imports") or (
+    return (isinstance(func, ast.Name) and func.id in ctx_aliases) or (
         isinstance(func, ast.Attribute)
         and isinstance(func.value, ast.Name)
-        and func.value.id == "lazyimports"
-        and func.attr == "lazy_imports"
+        and func.value.id in module_alises
+        and func.attr == CTX_NAME
+    )
+
+
+def get_aliases_from_tree(tree: ast.AST) -> tuple[set[str], set[str]]:
+    module_imports = (node for node in ast.walk(tree) if isinstance(node, ast.Import))
+    module_from_imports = (
+        node
+        for node in ast.walk(tree)
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.level == 0
+            and node.module == MODULE_NAME
+        )
+    )
+
+    return (
+        {
+            alias.asname or alias.name
+            for node in module_imports
+            for alias in node.names
+            if alias.name == MODULE_NAME
+        },
+        {
+            alias.asname or alias.name
+            for node in module_from_imports
+            for alias in node.names
+            if alias.name == CTX_NAME
+        },
     )
 
 
 def imports_from_tree(
-    fullname: str, tree: ast.AST
+    fullname: str,
+    tree: ast.AST,
 ) -> Generator[tuple[LazyEntity, str], None, None]:
     parts = fullname.split(".")
 
