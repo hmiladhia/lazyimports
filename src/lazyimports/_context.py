@@ -3,7 +3,8 @@ from __future__ import annotations
 import pkgutil
 from copy import copy
 from enum import Flag, auto
-from typing import TYPE_CHECKING
+from functools import lru_cache
+from typing import TYPE_CHECKING, Final
 from importlib.metadata import entry_points
 
 
@@ -59,20 +60,18 @@ class LazyImportContext:
         return ctx
 
     @classmethod
+    def default(cls) -> Self:
+        return copy(_DEFAULT_CONTEXT)
+
+    @classmethod
     def from_entrypoints(cls) -> Self:
         ctx = cls()
 
-        for obj in (
-            object_id.strip()
-            for entry in entry_points(group=LAZY_OBJECTS_ENTRYPOINT)
-            for object_id in entry.value.split(",")
-            if object_id.strip()
-        ):
-            modname, _, object_name = obj.partition(":")
+        for modname, object_name in _get_lazy_objects_from_entry_point():
             ctx.add_objects(modname, object_name)
 
-        for entry in entry_points(group=LAZY_EXPORTERS_ENTRYPOINT):
-            ctx.add_module(entry.value.strip(), module_type=MType.Export)
+        for exporter_name in _get_lazy_exporters_from_entry_point():
+            ctx.add_module(exporter_name, module_type=MType.Export)
 
         return ctx
 
@@ -126,3 +125,28 @@ class LazyImportContext:
         return fullname in self._lazy_modules or any(
             fullname.startswith(module_root + ".") for module_root in self._lazy_modules
         )
+
+
+@lru_cache
+def _get_lazy_objects_from_entry_point() -> list[tuple[str, str]]:
+    objs = (
+        obj.partition(":")
+        for obj in (
+            object_id.strip()
+            for entry in entry_points(group=LAZY_OBJECTS_ENTRYPOINT)
+            for object_id in entry.value.split(",")
+            if object_id.strip()
+        )
+    )
+
+    return [(modname, object_name) for modname, _, object_name in objs]
+
+
+@lru_cache
+def _get_lazy_exporters_from_entry_point() -> list[str]:
+    return [
+        entry.value.strip() for entry in entry_points(group=LAZY_EXPORTERS_ENTRYPOINT)
+    ]
+
+
+_DEFAULT_CONTEXT: Final[LazyImportContext] = LazyImportContext.from_entrypoints()

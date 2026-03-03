@@ -75,7 +75,12 @@ class LazyPathFinder(MetaPathFinder):
 
     @property
     def import_context(self) -> LazyImportContext:
-        return self._import_context.get(LazyImportContext.from_entrypoints())
+        if ctx := self._import_context.get(None):
+            return ctx
+
+        ctx = LazyImportContext.default()
+        self._import_context.set(ctx)
+        return ctx
 
     def find_spec(
         self,

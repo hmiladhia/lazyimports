@@ -8,7 +8,7 @@ from ._modules import ExportModule, LazyModule, load_module
 from ._proxy import LazyObjectProxy, extract_eager_object
 
 __author__ = "Dhia Hmila"
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 __all__ = [
     "ExportModule",
     "LazyModule",
@@ -28,7 +28,7 @@ def lazy_imports(
 ) -> Generator[LazyImportContext, None, None]:
     install()
 
-    new_context = LazyImportContext.from_entrypoints()
+    new_context = LazyImportContext.default()
     token = IMPORT_CONTEXT.set(new_context)
 
     try:
@@ -48,7 +48,7 @@ def install() -> None:
     if any(isinstance(finder, LazyPathFinder) for finder in sys.meta_path):
         return
 
-    lazy_import_context = LazyImportContext.from_entrypoints()
+    lazy_import_context = LazyImportContext.default()
 
     IMPORT_CONTEXT.set(lazy_import_context)
     sys.meta_path.insert(0, LazyPathFinder(IMPORT_CONTEXT))
